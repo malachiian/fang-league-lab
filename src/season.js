@@ -18,6 +18,7 @@ import {
   trainingCost,
 } from './data.js';
 import { hashSeed, makeRng, simulateMatch } from './match.js';
+import { ensureWeek, resetWeek, readyForMatch } from './weekly.js';
 
 export function roundRobin(ids) {
   const list = ids.slice();
@@ -74,6 +75,7 @@ export function newGame(raceId, seed) {
       fans: BALANCE.startFans,
       trainingLevel: 0,
       stadiumLevel: 0,
+      clinicLevel: 0,
       players: roster,
       ...blankRecord(),
     };
@@ -98,6 +100,7 @@ export function newGame(raceId, seed) {
     claimedGoals: [],
   };
   refreshPool(state);
+  ensureWeek(state);
   return state;
 }
 
@@ -331,6 +334,7 @@ function applyTrain(team, player, stat, rng) {
 }
 
 export function train(state, playerId, stat) {
+  if (state.phase !== 'league' || state.week?.status === 'ready') return { ok: false, reason: 'Training is finished for this week.' };
   const team = playerTeam(state);
   const player = team.players.find((p) => p.id === playerId);
   if (!player) return { ok: false, reason: 'No such player.' };
@@ -365,6 +369,7 @@ export function heal(state, playerId) {
   team.gold -= cost;
   clampGold(team);
   player.injury = 0;
+  if (state.week?.status === 'planning' && state.week.assignments[playerId] === 'recovery') delete state.week.assignments[playerId];
   return { ok: true, cost };
 }
 
@@ -375,6 +380,7 @@ export function release(state, playerId) {
   const index = team.players.findIndex((p) => p.id === playerId);
   if (index < 0) return { ok: false, reason: 'No such player.' };
   const [gone] = team.players.splice(index, 1);
+  if (state.week) delete state.week.assignments[playerId];
   return { ok: true, name: gone.name };
 }
 
@@ -405,15 +411,17 @@ export function rerollPool(state) {
 }
 
 export function upgrade(state, kind) {
+  if (!['training', 'stadium', 'clinic'].includes(kind)) return { ok: false, reason: 'Choose a facility.' };
   const team = playerTeam(state);
-  const level = kind === 'training' ? team.trainingLevel : team.stadiumLevel;
+  const key = { training: 'trainingLevel', stadium: 'stadiumLevel', clinic: 'clinicLevel' }[kind];
+  const level = team[key] || 0;
   const cost = facilityCost(kind, level);
   if (cost == null) return { ok: false, reason: `Already maxed (level ${BALANCE.maxFacility}).` };
   if (team.gold < cost) return { ok: false, reason: `Need ${cost}g.`, cost };
   team.gold -= cost;
   clampGold(team);
-  if (kind === 'training') team.trainingLevel += 1;
-  else team.stadiumLevel += 1;
+  team[key] = level + 1;
+  if (kind === 'training' && state.week?.status === 'planning') state.trainsLeft += 1;
   return { ok: true, cost, level: level + 1 };
 }
 
@@ -431,6 +439,7 @@ export function refreshPool(state) {
 export function resolveRound(state) {
   if (state.phase !== 'league') return [];
   if (state.round >= state.schedule.length) return [];
+  if (!readyForMatch(state)) return [];
   const wasOut = captureOut(state);
   const reports = [];
   for (const [a, b] of state.schedule[state.round]) {
@@ -455,6 +464,7 @@ export function resolveRound(state) {
     state.phase = 'review';
     noteTableFinish(state);
   }
+  if (state.phase === 'league') resetWeek(state);
   return reports;
 }
 
@@ -514,12 +524,14 @@ export function nextSeason(state) {
       team.fans = BALANCE.startFans;
       team.trainingLevel = 0;
       team.stadiumLevel = 0;
+      team.clinicLevel = 0;
     }
   }
   state.schedule = divisionSchedule(state.teams);
   state.poolVersion += 1;
   state.trainsLeft = BALANCE.trainsPerWeek;
   refreshPool(state);
+  resetWeek(state);
   return state;
 }
 

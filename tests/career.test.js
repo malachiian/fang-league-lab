@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { RACES } from '../src/data.js';
 import { newGame, playerTeam, resolveRound, resolveFinal, nextSeason, train, playerFixture, fixtureSeed, simById } from '../src/season.js';
 import { claimGoal } from '../src/club.js';
+import { advanceWeek } from '../src/weekly.js';
 import { SAVE_KEY, saveCareer, loadCareer, clearCareer } from '../src/save.js';
 
 function memory() {
@@ -37,13 +38,14 @@ test('full seasons retain history and goals, without duplicate rewards', () => {
   for (const race of RACES) {
     const game = newGame(race.id, 42);
     assert.equal(claimGoal(game, 'debut').ok, false);
+    advanceWeek(game);
     resolveRound(game);
     assert.equal(game.history.length, 1);
     const gold = playerTeam(game).gold;
     assert.equal(claimGoal(game, 'debut').reward, 30);
     assert.equal(claimGoal(game, 'debut').ok, false);
     assert.equal(playerTeam(game).gold, gold + 30);
-    for (let i=1;i<10;i++) resolveRound(game);
+    for (let i=1;i<10;i++) { advanceWeek(game); resolveRound(game); }
     assert.equal(game.phase, 'review');
     assert.equal(game.history.length, 10);
     const me = playerTeam(game);

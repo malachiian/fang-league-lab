@@ -1,3 +1,4 @@
+import { advanceWeek } from './src/weekly.js';
 import { RACES } from './src/data.js';
 import { newGame, resolveRound, playerRank } from './src/season.js';
 
@@ -6,7 +7,7 @@ const rows = RACES.map(race => {
   let won=0, drawn=0, lost=0, titles=0;
   for(let seed=1;seed<=runs;seed++) {
     const game=newGame(race.id,seed);
-    for(let round=0;round<10;round++) resolveRound(game);
+    for(let round=0;round<10;round++) { advanceWeek(game); resolveRound(game); }
     const finish=playerRank(game);
     const team=game.teams.find(t=>t.id===game.playerId);
     won+=team.won; drawn+=team.drawn; lost+=team.lost;
@@ -14,5 +15,5 @@ const rows = RACES.map(race => {
   }
   return {team:race.team,seasons:runs,won,drawn,lost,titles};
 });
-console.log('Idle-player baseline. Opponents use existing AI management. This is not a coached-play balance verdict.');
+console.log('Free-practice baseline. Player uses free weekly practice; opponents use existing AI management. This is not a coached-play balance verdict.');
 console.table(rows);

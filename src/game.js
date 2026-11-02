@@ -11,13 +11,13 @@ import {
   STAT_LABEL,
   divisionName,
   facilityCost,
+  clinicBlurb,
   healCost,
   purse,
   raceById,
   recruitCost,
   rulesLines,
   stadiumBlurb,
-  trainingCost,
   trainingGroundBlurb,
   traitLabel,
 } from './data.js';
@@ -40,11 +40,12 @@ import {
   sign,
   simById,
   teamById,
-  train,
   upgrade,
 } from './season.js';
 import { hashSeed, matchRuleText, pickLineup, simulateMatch } from './match.js';
 import { clubGoals, claimGoal } from './club.js';
+import { assignActivity, advanceWeek, readyForMatch } from './weekly.js';
+import { renderWeekly, weekSteps, renderWeekReport } from './weekly-view.js';
 import { saveCareer, loadCareer, clearCareer } from './save.js';
 import { ASSET_FILES } from './assets.js';
 
@@ -346,6 +347,7 @@ function renderHub() {
   const race = raceById(team.race);
   const tabs = [
     ['club', 'Clubhouse'],
+    ['week', 'This week'],
     ['squad', 'Squad'],
     ['recruit', 'Recruit'],
     ['upgrades', 'Upgrades'],
@@ -354,6 +356,7 @@ function renderHub() {
   ].map(([id, label]) => `<button type="button" class="tab${ui.tab === id ? ' on' : ''}" data-act="tab" data-tab="${id}">${label}</button>`).join('');
   let body = '';
   if (ui.tab === 'club') body = renderClub(team, race);
+  else if (ui.tab === 'week') body = renderWeekly(game, esc);
   else if (ui.tab === 'squad') body = renderSquad(team, race);
   else if (ui.tab === 'recruit') body = renderRecruit(team);
   else if (ui.tab === 'upgrades') body = renderUpgrades(team);
@@ -373,15 +376,16 @@ function renderClub(team, race) {
   const fx = playerFixture(game);
   const opponent = fx && teamById(game, fx[0] === team.id ? fx[1] : fx[0]);
   const fit = healthyCount(team);
+  const ready = readyForMatch(game);
   const history = (game.history || []).slice(-5).reverse();
   const goals = clubGoals(game);
   const complete = goals.filter(g => g.claimed).length;
   const lineup = pickLineup(team.players);
   const players = lineup.map((p, i) => `<img class="practice-player player-${i}" src="assets/${race.file}-${p.position}-idle.png" alt="${esc(p.name)} practicing" style="--i:${i}">`).join('');
-  const facilities = [['training', 'Training ground', team.trainingLevel], ['stadium', 'Stadium', team.stadiumLevel]].map(([id, label, level]) => `<button class="ground-building ${id}" data-act="tab" data-tab="upgrades"><span class="building-roof"></span><strong>${label}</strong><span>Level ${level} / 3</span></button>`).join('');
+  const facilities = [['training', 'Training ground', team.trainingLevel], ['stadium', 'Stadium', team.stadiumLevel]].map(([id, label, level]) => `<button class="ground-building ${id}" data-act="tab" data-tab="week"><span class="building-roof"></span><strong>${label}</strong><span>Level ${level} / 3</span></button>`).join('');
   const results = history.map(m => `<li><span class="result-badge ${m.us > m.them ? 'win' : m.us < m.them ? 'loss' : 'draw'}">${m.us > m.them ? 'W' : m.us < m.them ? 'L' : 'D'}</span><span>${esc(teamById(game, m.opponentId).short)}<small>Season ${m.season} · Match ${m.round}</small></span><strong>${m.us} : ${m.them}</strong></li>`).join('');
   const goalCards = goals.map(g => `<article class="goal ${g.claimed ? 'claimed' : ''}"><div class="goal-top"><span>${g.claimed ? 'Completed' : g.complete ? 'Reward ready' : 'Club goal'}</span><strong>+${g.reward}g</strong></div><h3>${esc(g.name)}</h3><p>${esc(g.detail)}</p><progress max="${g.target}" value="${Math.min(g.target, g.value)}" aria-label="${esc(g.name)}"></progress><div class="goal-bottom"><span>${Math.min(g.target, g.value)} / ${g.target}</span>${g.claimed ? '<span>Collected ✓</span>' : `<button data-act="claim" data-goal="${g.id}" ${g.complete ? '' : 'disabled'}>Collect</button>`}</div></article>`).join('');
-  return `<div class="club-layout"><section class="grounds panel"><div class="section-heading"><div><p class="eyebrow">Home sweet home</p><h2>Your club grounds</h2></div><span class="badge">${team.fans} fans</span></div><div class="ground-scene" aria-label="Club grounds with links to facilities and squad"><div class="ground-path"></div>${facilities}<button class="practice-pitch" data-act="tab" data-tab="squad" aria-label="Manage the squad"><span class="halfway"></span><span class="center-circle"></span>${players}<span class="pitch-caption">Meet your squad</span></button><span class="ground-sign">${esc(team.short)} FC</span></div><div class="ground-summary"><span><strong>${team.players.length}</strong> players</span><span><strong>${fit}</strong> fit to play</span><span><strong>${game.trainsLeft}</strong> training sessions</span></div></section><aside class="club-sidebar"><section class="panel fixture-card"><p class="eyebrow">Next up · Match ${game.round + 1} of 10</p><h2>${opponent ? esc(opponent.name) : 'Season complete'}</h2><p class="muted">${opponent ? esc(raceById(opponent.race).style) : 'Time to celebrate.'}</p><p>${fit < 5 ? `Only ${fit} fit. Visit the squad to heal injured players.` : 'Your team is ready to take the field.'}</p><button class="ember" data-act="tab" data-tab="match">Prepare for match →</button></section><section class="panel"><h2>Recent form</h2>${results ? `<ul class="form-list">${results}</ul>` : '<p class="muted">A new badge. A blank record. Your story starts with the first whistle.</p>'}<p class="muted">${game.titles} division titles · ${game.cups} cups</p></section></aside></div><div class="section-heading"><div><p class="eyebrow">Build something that lasts</p><h2>Club ambitions</h2></div><span>${complete} of ${goals.length} achieved</span></div><div class="goals-grid">${goalCards}</div>`;
+  return `${weekSteps(game)}<div class="club-layout"><section class="grounds panel"><div class="section-heading"><div><p class="eyebrow">Home sweet home</p><h2>Your club grounds</h2></div><span class="badge">${team.fans} fans</span></div><div class="ground-scene" aria-label="Club grounds with links to facilities and squad"><div class="ground-path"></div>${facilities}<button class="practice-pitch" data-act="tab" data-tab="squad" aria-label="Manage the squad"><span class="halfway"></span><span class="center-circle"></span>${players}<span class="pitch-caption">Meet your squad</span></button><span class="ground-sign">${esc(team.short)} FC</span></div><div class="ground-summary"><span><strong>${team.players.length}</strong> players</span><span><strong>${fit}</strong> fit to play</span><span><strong>${ready ? 'Ready' : game.trainsLeft}</strong> ${ready ? 'for match day' : 'coached places'}</span></div></section><aside class="club-sidebar"><section class="panel fixture-card"><p class="eyebrow">Next up · Match ${game.round + 1} of 10</p><h2>${opponent ? esc(opponent.name) : 'Season complete'}</h2><p class="muted">${opponent ? esc(raceById(opponent.race).style) : 'Time to celebrate.'}</p><p>${fit < 5 ? `Only ${fit} fit. Visit the squad to heal injured players.` : 'Your team is ready to take the field.'}</p><button class="ember" data-act="tab" data-tab="${ready ? 'match' : 'week'}">${ready ? 'Go to match day' : 'Plan this week'} →</button></section><section class="panel"><h2>Recent form</h2>${results ? `<ul class="form-list">${results}</ul>` : '<p class="muted">A new badge. A blank record. Your story starts with the first whistle.</p>'}<p class="muted">${game.titles} division titles · ${game.cups} cups</p></section></aside></div>${game.clubReports?.length ? `<details class="panel previous-week"><summary>${ready ? 'This week' : 'Last week'}: ${game.clubReports.at(-1).cost}g invested in the club</summary>${renderWeekReport(game.clubReports.at(-1), esc)}</details>` : ''}<div class="section-heading"><div><p class="eyebrow">Build something that lasts</p><h2>Club ambitions</h2></div><span>${complete} of ${goals.length} achieved</span></div><div class="goals-grid">${goalCards}</div>`;
 }
 
 function statLine(player) {
@@ -397,18 +401,7 @@ function renderSquad(team, race) {
     const canHeal = hurt && team.gold >= healPrice;
     const dropReason = releaseBlock(team, p.id);
     const canDrop = !dropReason;
-    const sessionsLeft = game.trainsLeft ?? 0;
-    const trainOpen = ui.trainId === p.id;
     const releaseOpen = ui.releaseId === p.id;
-    const trains = STATS.map((s) => {
-      const cost = trainingCost(p.stats[s], team.trainingLevel);
-      const capped = p.stats[s] >= BALANCE.statCap;
-      const afford = sessionsLeft > 0 && team.gold >= cost && !capped;
-      const why = sessionsLeft <= 0
-        ? `No sessions left (${BALANCE.trainsPerWeek} per week).`
-        : capped ? `At the cap (${BALANCE.statCap})` : `Need ${cost}g`;
-      return `<button type="button" data-act="train" data-id="${esc(p.id)}" data-stat="${s}" ${afford ? '' : 'disabled'} title="${esc(why)}">${STAT_LABEL[s]} ${p.stats[s]}→${Math.min(BALANCE.statCap, p.stats[s] + 1)} · ${cost}g</button>`;
-    }).join('');
     return `<article class="card" style="border-left:8px solid ${race.colors.primary}">
       <div class="who">
         <canvas class="portrait" width="140" height="180" data-portrait="${esc(p.id)}" data-expr="${hurt ? 'hurt' : 'neutral'}"></canvas>
@@ -423,12 +416,11 @@ function renderSquad(team, race) {
       <div class="bar" title="XP ${p.xp}/${BALANCE.xpLevel}"><span style="width:${Math.round((p.xp / BALANCE.xpLevel) * 100)}%"></span></div>
       <p class="muted">XP ${p.xp}/${BALANCE.xpLevel}. Focus ${STAT_LABEL[race.positions.find((pos) => pos.id === p.position)?.focus || 'agility']} on level-up.</p>
       <div class="row">
-        <button type="button" data-act="train-open" data-id="${esc(p.id)}">${trainOpen ? 'Close' : 'Train'}</button>
-        ${hurt ? `<button type="button" data-act="heal" data-id="${esc(p.id)}" ${canHeal ? '' : 'disabled'} title="${canHeal ? '' : `Need ${healPrice}g`}">Heal ${healPrice}g</button>` : ''}
+        <button type="button" data-act="plan-player" data-id="${esc(p.id)}">${readyForMatch(game) ? 'Week report' : hurt ? 'Plan recovery' : 'Plan training'}</button>
+        ${hurt ? `<button type="button" data-act="heal" data-id="${esc(p.id)}" ${canHeal ? '' : 'disabled'} title="${canHeal ? '' : `Need ${healPrice}g`}">Instant heal ${healPrice}g</button>` : ''}
         <button type="button" class="ghost" data-act="release-open" data-id="${esc(p.id)}" ${canDrop ? '' : 'disabled'} title="${esc(canDrop ? 'Release this player' : dropReason)}">Release</button>
         ${dropReason ? `<span class="why">${esc(dropReason)}</span>` : ''}
       </div>
-      ${trainOpen ? `<div class="row">${trains}</div><p class="muted">Training ground level ${team.trainingLevel}: ${esc(trainingGroundBlurb(team.trainingLevel))}</p>` : ''}
       ${releaseOpen ? `<div class="row"><button type="button" class="danger" data-act="release-yes" data-id="${esc(p.id)}">Release ${esc(p.name)}</button></div>` : ''}
     </article>`;
   }).join('');
@@ -437,7 +429,7 @@ function renderSquad(team, race) {
     ? `Injured: ${hurtList.map((p) => `${p.name} (${p.injury})`).join(', ')}.`
     : 'No one is injured.';
   return `<div class="panel" style="border-left:8px solid ${race.colors.primary}"><h2>Squad ${team.players.length}/${BALANCE.rosterMax}</h2>
-    <p class="muted">${fit} fit. Training sessions left this week: ${game.trainsLeft ?? 0}/${BALANCE.trainsPerWeek}. ${esc(hurtLine)} Five start. Release stays blocked below ${BALANCE.rosterMin} players or below ${BALANCE.fieldSize} fit. ${esc(race.name)}: ${esc(race.style)}. ${esc(traitLabel(race.trait))}</p></div>
+    <p class="muted">${fit} fit. ${readyForMatch(game) ? 'Weekly activities complete.' : `Plan this week: ${game.trainsLeft} coached places available.`} ${esc(hurtLine)} Five start. Release stays blocked below ${BALANCE.rosterMin} players or below ${BALANCE.fieldSize} fit. ${esc(race.name)}: ${esc(race.style)}. ${esc(traitLabel(race.trait))}</p></div>
     <div class="grid" style="margin-top:10px">${cards}</div>`;
 }
 
@@ -467,6 +459,7 @@ function renderUpgrades(team) {
   const blocks = [
     ['training', 'Training ground', team.trainingLevel, trainingGroundBlurb(team.trainingLevel), images.stands],
     ['stadium', 'Stadium', team.stadiumLevel, stadiumBlurb(team.stadiumLevel), images.trophy],
+    ['clinic', 'Club clinic', team.clinicLevel, clinicBlurb(team.clinicLevel, team.trait), null],
   ].map(([kind, label, level, blurb, img]) => {
     const cost = facilityCost(kind, level);
     const maxed = cost == null;
@@ -475,13 +468,14 @@ function renderUpgrades(team) {
     return `<article class="card">
       <div class="who">${art}<h2>${label} · level ${level}/${BALANCE.maxFacility}</h2></div>
       <p class="muted">${esc(blurb)}</p>
+      ${!maxed ? `<p class="upgrade-preview"><strong>Next level:</strong> ${esc(kind === 'training' ? trainingGroundBlurb(level + 1) : kind === 'clinic' ? clinicBlurb(level + 1, team.trait) : stadiumBlurb(level + 1))}</p>` : ''}
       ${maxed ? '<p class="style">Maxed.</p>' : `<button type="button" data-act="upgrade" data-kind="${kind}" ${afford ? '' : 'disabled'} title="${afford ? '' : `Need ${cost}g`}">Upgrade · ${cost}g</button>`}
     </article>`;
   }).join('');
   const win = purse(team, 'win');
   const loss = purse(team, 'loss');
   const rules = rulesLines().map((line) => `<li>${esc(line)}</li>`).join('');
-  return `<div class="split">${blocks}</div>
+  return `<div class="section-heading"><div><p class="eyebrow">Build your advantage</p><h2>A better place to grow.</h2></div><button class="ghost" data-act="tab" data-tab="week">Back to weekly plan</button></div><div class="facility-grid">${blocks}</div>
     <div class="panel" style="margin-top:10px">
       <h2>What you get paid</h2>
       <p class="muted">At ${team.fans} fans, stadium ${team.stadiumLevel}: a win pays ${win.total}g (gate ${win.gate} + sponsor ${win.sponsor}) and ${win.fansDelta >= 0 ? '+' : ''}${win.fansDelta} fans. A loss pays ${loss.total}g and ${loss.fansDelta} fans. Fans never drop below ${BALANCE.fansMin}.</p>
@@ -548,7 +542,7 @@ function renderMatchup(team) {
     : fit < 5
       ? `Only ${fit} fit. You will start short-handed.`
       : '';
-  return `<div class="split">
+  return `${weekSteps(game)}${!readyForMatch(game) ? '<div class="panel prep-reminder"><h2>Your preparation week comes first.</h2><p>Assign activities and run the week before kickoff. Free team practice is always an option.</p><button class="ember" data-act="tab" data-tab="week">Plan this week →</button></div>' : ''}<div class="split">
       <div class="panel">${lineupBlock(team)}</div>
       <div class="panel">${lineupBlock(opp)}</div>
     </div>
@@ -557,7 +551,7 @@ function renderMatchup(team) {
       <p class="muted">Forty kicks with today's squads (not this match's real seed): ${ui.estimate.w} wins, ${ui.estimate.d} draws, ${ui.estimate.l} losses.</p>
       <p class="muted">Win ${win.total}g and ${win.fansDelta >= 0 ? '+' : ''}${win.fansDelta} fans. Draw ${draw.total}g. Loss ${loss.total}g and ${loss.fansDelta} fans.</p>
       ${warn ? `<p class="style">${esc(warn)}</p>` : ''}
-      <button type="button" class="ember" data-act="kickoff">Kick off</button>
+      <button type="button" class="ember" data-act="kickoff" ${readyForMatch(game) ? '' : 'disabled'}>Kick off</button>
     </div>`;
 }
 
@@ -1195,17 +1189,24 @@ function act(name, el) {
     render();
     return;
   }
-  if (name === 'train-open') {
-    ui.trainId = ui.trainId === el.dataset.id ? null : el.dataset.id;
-    ui.releaseId = null;
+  if (name === 'plan-player') {
+    ui.tab = 'week';
     render();
+    const select = document.getElementById(`activity-${el.dataset.id}`);
+    if (select) { select.scrollIntoView({ block: 'center', behavior: 'instant' }); select.focus({ preventScroll: true }); }
     return;
   }
-  if (name === 'train') {
-    const result = train(game, el.dataset.id, el.dataset.stat);
-    flash(result.ok
-      ? `${STAT_LABEL[el.dataset.stat]} +${result.gain} for ${result.cost}g. ${(result.notes || []).join(' ')}`
-      : result.reason);
+  if (name === 'advance-week') {
+    const result = advanceWeek(game);
+    ui.estimateKey = '';
+    flash(result.ok ? `Week ${result.report.week} complete. ${result.report.cost}g spent. Your squad's progress is below.` : result.reason);
+    render();
+    document.querySelector('.week-complete')?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    return;
+  }
+  if (name === 'reset-plan' && game.week.status === 'planning') {
+    game.week.assignments = {};
+    flash('Fit players will join free team practice. Injured players will rest.');
     render();
     return;
   }
@@ -1241,11 +1242,12 @@ function act(name, el) {
   }
   if (name === 'upgrade') {
     const result = upgrade(game, el.dataset.kind);
-    flash(result.ok ? `${el.dataset.kind === 'training' ? 'Training ground' : 'Stadium'} is level ${result.level}.` : result.reason);
+    flash(result.ok ? `${el.dataset.kind === 'training' ? 'Training ground' : el.dataset.kind === 'clinic' ? 'Club clinic' : 'Stadium'} is level ${result.level}.` : result.reason);
     render();
     return;
   }
   if (name === 'kickoff') {
+    if (!readyForMatch(game)) { flash('Run your preparation week before kickoff.'); ui.tab = 'week'; render(); return; }
     const fx = playerFixture(game);
     const seed = fixtureSeed(game, game.round, fx[0], fx[1]);
     const res = simById(game, fx[0], fx[1], seed);
@@ -1282,6 +1284,16 @@ function act(name, el) {
     render();
   }
 }
+
+document.body.addEventListener('change', event => {
+  const playerId = event.target.dataset.activityPlayer;
+  if (!playerId || !game) return;
+  const selectedId = event.target.id;
+  const result = assignActivity(game, playerId, event.target.value);
+  flash(result.ok ? '' : result.reason);
+  render();
+  document.getElementById(selectedId)?.focus({ preventScroll: true });
+});
 
 document.body.addEventListener('click', (event) => {
   const el = event.target.closest('[data-act]');

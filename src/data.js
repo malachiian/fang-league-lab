@@ -65,6 +65,7 @@ export const BALANCE = {
   fansPerStadiumWin: 2,
   trainingCosts: [0, 150, 280, 420],
   stadiumCosts: [0, 170, 320, 480],
+  clinicCosts: [0, 120, 220, 340],
   maxFacility: 3,
 };
 
@@ -451,14 +452,15 @@ export function purse(team, result) {
 
 export function facilityCost(kind, level) {
   if (level >= BALANCE.maxFacility) return null;
-  const table = kind === 'training' ? BALANCE.trainingCosts : BALANCE.stadiumCosts;
+  const table = { training: BALANCE.trainingCosts, stadium: BALANCE.stadiumCosts, clinic: BALANCE.clinicCosts }[kind];
+  if (!table) return null;
   return table[level + 1];
 }
 
 export function trainingGroundBlurb(level) {
   const cut = Math.round(BALANCE.trainDiscount * level * 100);
   const trim = BALANCE.healTrim * level;
-  const bits = [`Training costs −${cut}%. Heal fee −${trim}g.`];
+  const bits = [`${BALANCE.trainsPerWeek + level} coached places per week.`, level ? `Training costs −${cut}%. Instant heal fee −${trim}g.` : 'Coaching prices depend on player stats.'];
   if (level >= BALANCE.trainBonusLevel) {
     bits.push(`1 in ${Math.round(1 / BALANCE.trainBonusChance)} sessions adds 2 if the stat has room.`);
   }
@@ -468,7 +470,12 @@ export function trainingGroundBlurb(level) {
 export function stadiumBlurb(level) {
   const gate = Math.round(BALANCE.stadiumGate * level * 100);
   const fans = level * BALANCE.fansPerStadiumWin;
-  return `Gate receipts +${gate}%. Wins pull in +${fans} extra fans.`;
+  return level ? `${1 + level} fan outreach places per week. Gate receipts +${gate}%. Wins pull in +${fans} extra fans.` : '1 fan outreach place per week. Upgrades increase gate income and fans from wins.';
+}
+
+export function clinicBlurb(level, traitId = 'none') {
+  const cost = Math.round(Math.max(2, 8 - 2 * level) * (TRAITS[traitId]?.healMult || 1));
+  return `${1 + level} treatment place${level ? 's' : ''} per week. Each costs ${cost}g and removes ${level >= 2 ? 2 : 1} match${level >= 2 ? 'es' : ''} of injury before kickoff.`;
 }
 
 export function makeName(raceId, rng, used) {
@@ -536,7 +543,7 @@ export function rulesLines() {
     `Sponsor = ${BALANCE.sponsorBase} + ${BALANCE.sponsorPerStadium} × stadium, plus ${BALANCE.sponsorWin} for a win or ${BALANCE.sponsorDraw} for a draw.`,
     `Win fans +${BALANCE.fansWin} (+${BALANCE.fansPerStadiumWin} per stadium level). Draw +${BALANCE.fansDraw}. Loss ${BALANCE.fansLoss}. Crowd never drops below ${BALANCE.fansMin}.`,
     `Stats cap at ${BALANCE.statCap}. Squad stays between ${BALANCE.rosterMin} and ${BALANCE.rosterMax}, and you must keep ${BALANCE.fieldSize} fit players to field a side.`,
-    `Training is limited to ${BALANCE.trainsPerWeek} sessions between matches. Gold cost still applies.`,
+    `Plan one activity per player before each league match. There are ${BALANCE.trainsPerWeek} coached places, plus one per training-ground level. Free team practice gives 2 XP.`,
     'Each drive is one check, never outside 14–86%. No lineup makes a loss impossible.',
   ];
 }
