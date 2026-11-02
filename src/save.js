@@ -1,5 +1,6 @@
 import { RACES, STATS } from './data.js';
 import { ACTIVITIES, ensureWeek, weekKey } from './weekly.js';
+import { TACTICS } from './match.js';
 
 export const SAVE_KEY = 'fang-league-lab.career.v1';
 const phases = new Set(['league', 'review', 'done']);
@@ -16,7 +17,10 @@ function validGame(g) {
   if (new Set(g.teams.map(t => t.id)).size !== ids.size || !g.teams.every(t => ids.has(t.id) && ids.has(t.race)
     && typeof t.name === 'string' && ['fen', 'ridge'].includes(t.division)
     && ['gold', 'fans', 'won', 'drawn', 'lost', 'pf', 'pa', 'trainingLevel', 'stadiumLevel'].every(k => integer(t[k]))
-    && Array.isArray(t.players) && t.players.length >= 1 && t.players.length <= 10 && t.players.every(player))) return false;
+    && Array.isArray(t.players) && t.players.length >= 1 && t.players.length <= 10 && t.players.every(player)
+    && (t.tactic == null || Object.hasOwn(TACTICS, t.tactic))
+    && (t.lineup == null || (Array.isArray(t.lineup) && t.lineup.length <= 5
+      && new Set(t.lineup).size === t.lineup.length && t.lineup.every(id => t.players.some(p => p.id === id)))))) return false;
   return Array.isArray(g.schedule) && g.schedule.length === 10 && g.round <= 10
     && g.schedule.every(round => Array.isArray(round) && round.length === 6 && round.every(p => Array.isArray(p) && p.length === 2 && ids.has(p[0]) && ids.has(p[1])))
     && Array.isArray(g.pool) && g.pool.every(player)

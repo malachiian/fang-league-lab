@@ -72,10 +72,9 @@ export const BALANCE = {
 /**
  * Trait numbers are the only hidden-looking modifiers, and the UI
  * prints traitLabel() from these same fields.
- * lineCheck / speedCheck are added to that side's drive rating.
- * injuryBonus: extra chance their tackles injure the carrier.
- * injuryTaken: extra chance their own carrier is hurt.
- * injuryResist: subtracted from chance they are hurt.
+ * lineCheck adds strength in contact contests. Legacy speedCheck is zero.
+ * Injury fields are scaled by .25 per successful tackle in the spatial engine.
+ * injuryBonus / injuryTaken increase that chance; injuryResist reduces it.
  */
 export const TRAITS = {
   none: {
@@ -116,9 +115,9 @@ export function traitLabel(id) {
   const bits = [];
   if (t.lineCheck) bits.push(`strength checks +${bonusText(t.lineCheck)}`);
   if (t.speedCheck) bits.push(`speed checks +${bonusText(t.speedCheck)}`);
-  if (t.injuryBonus) bits.push(`tackles injure ${Math.round(t.injuryBonus * 100)}% more often`);
-  if (t.injuryTaken) bits.push(`carriers get hurt ${Math.round(t.injuryTaken * 100)}% more often`);
-  if (t.injuryResist) bits.push(`injury chance ${Math.round(t.injuryResist * 100)}% lower`);
+  if (t.injuryBonus) bits.push(`injury chance on successful tackles +${t.injuryBonus * 25} percentage points`);
+  if (t.injuryTaken) bits.push(`injury chance when tackled +${t.injuryTaken * 25} percentage points`);
+  if (t.injuryResist) bits.push(`injury chance when tackled -${t.injuryResist * 25} percentage points`);
   if (t.regen) bits.push('injuries last 1 match');
   if (t.healMult < 1) bits.push(`healing costs ${Math.round(t.healMult * 100)}%`);
   if (!bits.length) return 'No extra modifier. The four stats are the whole story.';
@@ -544,6 +543,6 @@ export function rulesLines() {
     `Win fans +${BALANCE.fansWin} (+${BALANCE.fansPerStadiumWin} per stadium level). Draw +${BALANCE.fansDraw}. Loss ${BALANCE.fansLoss}. Crowd never drops below ${BALANCE.fansMin}.`,
     `Stats cap at ${BALANCE.statCap}. Squad stays between ${BALANCE.rosterMin} and ${BALANCE.rosterMax}, and you must keep ${BALANCE.fieldSize} fit players to field a side.`,
     `Plan one activity per player before each league match. There are ${BALANCE.trainsPerWeek} coached places, plus one per training-ground level. Free team practice gives 2 XP.`,
-    'Each drive is one check, never outside 14–86%. No lineup makes a loss impossible.',
+    'Matches resolve player movement, blocking, passing, tackling and recoveries. Choose your starting five and a tactical plan before kickoff.',
   ];
 }

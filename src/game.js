@@ -42,12 +42,13 @@ import {
   teamById,
   upgrade,
 } from './season.js';
-import { hashSeed, matchRuleText, pickLineup, simulateMatch } from './match.js';
+import { hashSeed, matchRuleText, pickLineup, simulateMatch, TACTICS, defaultTactic } from './match.js';
 import { clubGoals, claimGoal } from './club.js';
 import { assignActivity, advanceWeek, readyForMatch } from './weekly.js';
 import { renderWeekly, weekSteps, renderWeekReport } from './weekly-view.js';
 import { saveCareer, loadCareer, clearCareer } from './save.js';
 import { ASSET_FILES } from './assets.js';
+import { drawBroadcast } from './match-view.js';
 
 const storage = {
   getItem: key => window.localStorage.getItem(key),
@@ -76,6 +77,9 @@ const ui = {
   playback: null,
   post: null,
   applying: false,
+  autoReplay: true,
+  swapId: null,
+  exhibition: { home: 'orcs', away: 'elves', tacticA: 'power', tacticB: 'spread', seed: 3 },
   estimateKey: '',
   estimate: null,
 };
@@ -94,6 +98,7 @@ function noteMissing(src) {
 }
 
 function want(key, src, opts = {}) {
+  if (images[key]) return images[key];
   // Optional poses use the existing body fallback without issuing a failing request.
   if (!ASSET_FILES.has(src)) return null;
   const over = ASSET_OVERRIDES[key] || {};
@@ -127,24 +132,17 @@ function loadArt() {
   want('stands', 'assets/stands.png', { pixelated: false });
   want('trophy', 'assets/trophy-room.png', { pixelated: false });
   for (const race of RACES) {
-    want(`crest-${race.file}`, `assets/crest-${race.file}.png`, { pixelated: false });
-    const painted = PAINTED_RACES.has(race.id);
-    for (const pos of race.positions) {
-      const stem = `${race.file}-${pos.id}`;
-      want(`${stem}-idle`, `assets/${stem}-idle.png`);
-      // Painted races use -idle only; the old -hd bodies still carry a painted ball.
-      if (!painted) {
-        want(`${stem}-hd-128`, `assets/${stem}-hd-128.png`);
-        want(`${stem}-hd`, `assets/${stem}-hd.png`);
-        want(stem, `assets/${stem}.png`);
-      }
-      want(`${stem}-run`, `assets/${stem}-run.png`);
-      want(`${stem}-tackle`, `assets/${stem}-tackle.png`);
-      want(`${stem}-down`, `assets/${stem}-down.png`);
-      for (const expr of ART.expressions) {
-        want(`${stem}-portrait-${expr}`, `assets/${stem}-portrait-${expr}.png`);
-      }
-    }
+    want(`crest-${race.file}`, `assets/crest-${race.file}.png`);
+    want(`${race.file}-${race.face}-portrait-neutral`, `assets/${race.file}-${race.face}-portrait-neutral.png`);
+  }
+}
+
+function loadRaceArt(raceId) {
+  const race = raceById(raceId);
+  for (const pos of race.positions) {
+    const stem = `${race.file}-${pos.id}`;
+    for (const pose of ART.poses) want(`${stem}-${pose}`, `assets/${stem}-${pose}.png`);
+    for (const expr of ART.expressions) want(`${stem}-portrait-${expr}`, `assets/${stem}-portrait-${expr}.png`);
   }
 }
 
@@ -244,6 +242,8 @@ function doRestart() {
 
 function render() {
   document.body.dataset.screen = ui.screen;
+  if (game) loadRaceArt(playerTeam(game).race);
+  if (ui.screen === 'exhibition') { loadRaceArt(ui.exhibition.home); loadRaceArt(ui.exhibition.away); }
   renderHud();
   if (flashEl) flashEl.textContent = ui.flash || '';
   if (ui.screen === 'select') view.innerHTML = renderSelect();
@@ -252,6 +252,9 @@ function render() {
   else if (ui.screen === 'post') view.innerHTML = renderPost();
   else if (ui.screen === 'review') view.innerHTML = renderReview();
   else if (ui.screen === 'done') view.innerHTML = renderDone();
+  else if (ui.screen === 'exhibition') view.innerHTML = renderExhibition();
+  else if (ui.screen === 'exhibition-result') view.innerHTML = renderExhibitionResult();
+  else if (ui.screen === 'loading-match') view.innerHTML = '<section class="panel loading-match"><p class="eyebrow">Fang League · Matchday</p><h2>The teams are taking the field.</h2><p>Getting the stadium ready…</p></section>';
   paintStill();
   const saved = saveCareer(storage, game, ui);
   if (!saved.skipped) saveWarning = saved.ok ? '' : saved.message;
@@ -380,9 +383,9 @@ function renderClub(team, race) {
   const history = (game.history || []).slice(-5).reverse();
   const goals = clubGoals(game);
   const complete = goals.filter(g => g.claimed).length;
-  const lineup = pickLineup(team.players);
+  const lineup = pickLineup(team.players, team.lineup);
   const players = lineup.map((p, i) => `<img class="practice-player player-${i}" src="assets/${race.file}-${p.position}-idle.png" alt="${esc(p.name)} practicing" style="--i:${i}">`).join('');
-  const facilities = [['training', 'Training ground', team.trainingLevel], ['stadium', 'Stadium', team.stadiumLevel]].map(([id, label, level]) => `<button class="ground-building ${id}" data-act="tab" data-tab="week"><span class="building-roof"></span><strong>${label}</strong><span>Level ${level} / 3</span></button>`).join('');
+  const facilities = [['training', 'Training ground', team.trainingLevel], ['stadium', 'Stadium', team.stadiumLevel]].map(([id, label, level]) => `<button class="ground-building ${id}" data-act="tab" data-tab="week"><img class="facility-art" src="assets/facility-${id}-l${level}.png" alt=""><strong>${label}</strong><span>Level ${level} / 3</span></button>`).join('');
   const results = history.map(m => `<li><span class="result-badge ${m.us > m.them ? 'win' : m.us < m.them ? 'loss' : 'draw'}">${m.us > m.them ? 'W' : m.us < m.them ? 'L' : 'D'}</span><span>${esc(teamById(game, m.opponentId).short)}<small>Season ${m.season} · Match ${m.round}</small></span><strong>${m.us} : ${m.them}</strong></li>`).join('');
   const goalCards = goals.map(g => `<article class="goal ${g.claimed ? 'claimed' : ''}"><div class="goal-top"><span>${g.claimed ? 'Completed' : g.complete ? 'Reward ready' : 'Club goal'}</span><strong>+${g.reward}g</strong></div><h3>${esc(g.name)}</h3><p>${esc(g.detail)}</p><progress max="${g.target}" value="${Math.min(g.target, g.value)}" aria-label="${esc(g.name)}"></progress><div class="goal-bottom"><span>${Math.min(g.target, g.value)} / ${g.target}</span>${g.claimed ? '<span>Collected ✓</span>' : `<button data-act="claim" data-goal="${g.id}" ${g.complete ? '' : 'disabled'}>Collect</button>`}</div></article>`).join('');
   return `${weekSteps(game)}<div class="club-layout"><section class="grounds panel"><div class="section-heading"><div><p class="eyebrow">Home sweet home</p><h2>Your club grounds</h2></div><span class="badge">${team.fans} fans</span></div><div class="ground-scene" aria-label="Club grounds with links to facilities and squad"><div class="ground-path"></div>${facilities}<button class="practice-pitch" data-act="tab" data-tab="squad" aria-label="Manage the squad"><span class="halfway"></span><span class="center-circle"></span>${players}<span class="pitch-caption">Meet your squad</span></button><span class="ground-sign">${esc(team.short)} FC</span></div><div class="ground-summary"><span><strong>${team.players.length}</strong> players</span><span><strong>${fit}</strong> fit to play</span><span><strong>${ready ? 'Ready' : game.trainsLeft}</strong> ${ready ? 'for match day' : 'coached places'}</span></div></section><aside class="club-sidebar"><section class="panel fixture-card"><p class="eyebrow">Next up · Match ${game.round + 1} of 10</p><h2>${opponent ? esc(opponent.name) : 'Season complete'}</h2><p class="muted">${opponent ? esc(raceById(opponent.race).style) : 'Time to celebrate.'}</p><p>${fit < 5 ? `Only ${fit} fit. Visit the squad to heal injured players.` : 'Your team is ready to take the field.'}</p><button class="ember" data-act="tab" data-tab="${ready ? 'match' : 'week'}">${ready ? 'Go to match day' : 'Plan this week'} →</button></section><section class="panel"><h2>Recent form</h2>${results ? `<ul class="form-list">${results}</ul>` : '<p class="muted">A new badge. A blank record. Your story starts with the first whistle.</p>'}<p class="muted">${game.titles} division titles · ${game.cups} cups</p></section></aside></div>${game.clubReports?.length ? `<details class="panel previous-week"><summary>${ready ? 'This week' : 'Last week'}: ${game.clubReports.at(-1).cost}g invested in the club</summary>${renderWeekReport(game.clubReports.at(-1), esc)}</details>` : ''}<div class="section-heading"><div><p class="eyebrow">Build something that lasts</p><h2>Club ambitions</h2></div><span>${complete} of ${goals.length} achieved</span></div><div class="goals-grid">${goalCards}</div>`;
@@ -393,7 +396,7 @@ function statLine(player) {
 }
 
 function renderSquad(team, race) {
-  const starters = new Set(pickLineup(team.players).map((p) => p.id));
+  const starters = new Set(pickLineup(team.players, team.lineup).map((p) => p.id));
   const fit = healthyCount(team);
   const cards = team.players.map((p) => {
     const hurt = p.injury > 0;
@@ -408,7 +411,7 @@ function renderSquad(team, race) {
         <div>
           <h2>${esc(p.name)}</h2>
           <p class="muted">${esc(p.positionLabel)} · level ${p.level}</p>
-          ${starters.has(p.id) ? '<span class="badge">Starting</span>' : ''}
+          ${starters.has(p.id) ? '<span class="badge">Starting</span>' : '<span class="badge bench">Reserve</span>'}
           ${hurt ? `<span class="badge out">Out ${p.injury}</span>` : '<span class="badge fit">Fit</span>'}
         </div>
       </div>
@@ -416,6 +419,8 @@ function renderSquad(team, race) {
       <div class="bar" title="XP ${p.xp}/${BALANCE.xpLevel}"><span style="width:${Math.round((p.xp / BALANCE.xpLevel) * 100)}%"></span></div>
       <p class="muted">XP ${p.xp}/${BALANCE.xpLevel}. Focus ${STAT_LABEL[race.positions.find((pos) => pos.id === p.position)?.focus || 'agility']} on level-up.</p>
       <div class="row">
+        ${!hurt && !starters.has(p.id) ? `<button type="button" class="ember" data-act="choose-sub" data-id="${esc(p.id)}">${ui.swapId === p.id ? 'Cancel swap' : 'Put in starting five'}</button>` : ''}
+        ${starters.has(p.id) && ui.swapId ? `<button type="button" class="ember" data-act="swap-starter" data-id="${esc(p.id)}">Replace ${esc(p.name)}</button>` : ''}
         <button type="button" data-act="plan-player" data-id="${esc(p.id)}">${readyForMatch(game) ? 'Week report' : hurt ? 'Plan recovery' : 'Plan training'}</button>
         ${hurt ? `<button type="button" data-act="heal" data-id="${esc(p.id)}" ${canHeal ? '' : 'disabled'} title="${canHeal ? '' : `Need ${healPrice}g`}">Instant heal ${healPrice}g</button>` : ''}
         <button type="button" class="ghost" data-act="release-open" data-id="${esc(p.id)}" ${canDrop ? '' : 'disabled'} title="${esc(canDrop ? 'Release this player' : dropReason)}">Release</button>
@@ -428,7 +433,7 @@ function renderSquad(team, race) {
   const hurtLine = hurtList.length
     ? `Injured: ${hurtList.map((p) => `${p.name} (${p.injury})`).join(', ')}.`
     : 'No one is injured.';
-  return `<div class="panel" style="border-left:8px solid ${race.colors.primary}"><h2>Squad ${team.players.length}/${BALANCE.rosterMax}</h2>
+  return `<div class="panel" style="border-left:8px solid ${race.colors.primary}"><h2>Squad ${team.players.length}/${BALANCE.rosterMax}</h2><button class="ghost" data-act="auto-lineup">Auto-pick starting five</button>${ui.swapId ? '<p class="style">Choose which starter to replace below.</p>' : ''}
     <p class="muted">${fit} fit. ${readyForMatch(game) ? 'Weekly activities complete.' : `Plan this week: ${game.trainsLeft} coached places available.`} ${esc(hurtLine)} Five start. Release stays blocked below ${BALANCE.rosterMin} players or below ${BALANCE.fieldSize} fit. ${esc(race.name)}: ${esc(race.style)}. ${esc(traitLabel(race.trait))}</p></div>
     <div class="grid" style="margin-top:10px">${cards}</div>`;
 }
@@ -510,7 +515,7 @@ function renderTable() {
 }
 
 function lineupBlock(team) {
-  const starters = pickLineup(team.players);
+  const starters = pickLineup(team.players, team.lineup);
   const lines = starters.map((p) => `<li>${esc(p.name)} · ${esc(p.positionLabel)} · Str ${p.stats.strength} Spd ${p.stats.speed} Agi ${p.stats.agility} Pas ${p.stats.passing}</li>`).join('');
   const total = starters.reduce((s, p) => s + p.stats.strength + p.stats.speed + p.stats.agility + p.stats.passing, 0);
   return `<h2>${esc(team.name)}</h2><p class="muted">${esc(traitLabel(team.trait))} Starting stat total ${total}. Fit ${healthyCount(team)}/${team.players.length}.</p><ul class="muted">${lines}</ul>`;
@@ -521,18 +526,7 @@ function renderMatchup(team) {
   if (!fx) return `<div class="panel"><p>No match scheduled.</p></div>`;
   const oppId = fx[0] === team.id ? fx[1] : fx[0];
   const opp = teamById(game, oppId);
-  const key = JSON.stringify([game.season, game.round, team.players, opp.players]);
-  if (ui.estimateKey !== key) {
-    let w = 0; let d = 0; let l = 0;
-    for (let i = 0; i < 40; i += 1) {
-      const res = simById(game, team.id, opp.id, hashSeed(game.seed, 'est', game.season, game.round, i));
-      if (res.winner === 'A') w += 1;
-      else if (res.winner === 'B') l += 1;
-      else d += 1;
-    }
-    ui.estimate = { w, d, l };
-    ui.estimateKey = key;
-  }
+  loadRaceArt(opp.race);
   const win = purse(team, 'win');
   const loss = purse(team, 'loss');
   const draw = purse(team, 'draw');
@@ -542,24 +536,51 @@ function renderMatchup(team) {
     : fit < 5
       ? `Only ${fit} fit. You will start short-handed.`
       : '';
-  return `${weekSteps(game)}${!readyForMatch(game) ? '<div class="panel prep-reminder"><h2>Your preparation week comes first.</h2><p>Assign activities and run the week before kickoff. Free team practice is always an option.</p><button class="ember" data-act="tab" data-tab="week">Plan this week →</button></div>' : ''}<div class="split">
+  return `${renderTactics(team)}${weekSteps(game)}${!readyForMatch(game) ? '<div class="panel prep-reminder"><h2>Your preparation week comes first.</h2><p>Assign activities and run the week before kickoff. Free team practice is always an option.</p><button class="ember" data-act="tab" data-tab="week">Plan this week →</button></div>' : ''}<div class="split">
       <div class="panel">${lineupBlock(team)}</div>
       <div class="panel">${lineupBlock(opp)}</div>
     </div>
     <div class="panel" style="margin-top:10px">
       <p>${esc(matchRuleText())}</p>
-      <p class="muted">Forty kicks with today's squads (not this match's real seed): ${ui.estimate.w} wins, ${ui.estimate.d} draws, ${ui.estimate.l} losses.</p>
+<p class="muted">Your starting five and tactical plan shape the match. Injured starters are replaced by fit reserves at kickoff.</p>
       <p class="muted">Win ${win.total}g and ${win.fansDelta >= 0 ? '+' : ''}${win.fansDelta} fans. Draw ${draw.total}g. Loss ${loss.total}g and ${loss.fansDelta} fans.</p>
       ${warn ? `<p class="style">${esc(warn)}</p>` : ''}
       <button type="button" class="ember" data-act="kickoff" ${readyForMatch(game) ? '' : 'disabled'}>Kick off</button>
     </div>`;
 }
 
+function renderTactics(team) {
+  const selected = team.tactic || defaultTactic(team);
+  return `<div class="section-heading"><div><p class="eyebrow">The coach's call</p><h2>How do you want to win?</h2></div><button class="ghost" data-act="tab" data-tab="squad">Choose starting five</button></div><div class="tactic-grid">${Object.entries(TACTICS).map(([id, plan]) => `<button class="tactic-card ${id === selected ? 'selected' : ''}" data-act="set-tactic" data-tactic="${id}" aria-pressed="${id === selected}"><span>${plan.short}</span><h3>${plan.name}</h3><p>${plan.description}</p></button>`).join('')}</div>`;
+}
+
+function renderExhibition() {
+  const ex = ui.exhibition;
+  const side = (key, tacticKey, label) => {
+    const race = raceById(ex[key]);
+    return `<article class="exhibition-team"><p class="eyebrow">${label}</p><canvas class="face" width="200" height="230" data-face="${race.id}"></canvas><label for="ex-${key}">Club</label><select id="ex-${key}" data-exhibition="${key}">${RACES.map(r => `<option value="${r.id}" ${r.id === race.id ? 'selected' : ''}>${r.team}</option>`).join('')}</select><label for="ex-${tacticKey}">Game plan</label><select id="ex-${tacticKey}" data-exhibition="${tacticKey}">${Object.entries(TACTICS).map(([id, p]) => `<option value="${id}" ${id === ex[tacticKey] ? 'selected' : ''}>${p.name} · ${p.short}</option>`).join('')}</select><p>${TACTICS[ex[tacticKey]].description}</p></article>`;
+  };
+  return `<section class="exhibition-intro"><p class="eyebrow">Five a side. No place to hide.</p><h2>LET THEM PLAY.</h2><p>Big hits. Desperate passes. One loose ball can change everything.</p></section><div class="exhibition-pair">${side('home','tacticA','Home club')}<div class="versus">VS</div>${side('away','tacticB','Away club')}</div><div class="exhibition-launch"><button class="ember" data-act="start-exhibition" ${ex.home === ex.away ? 'disabled' : ''}>Watch the match →</button><button class="ghost" data-act="leave-exhibition">${game ? 'Back to my club' : 'Start a club instead'}</button><p>Exhibitions keep your career untouched. Choose different clubs or plans to change the contest.</p></div>`;
+}
+
+function renderMatchStats(res, home, away) {
+  if (!res.stats) return '';
+  const stats = [['touchdowns','Touchdowns'],['passes','Passes attempted'],['completions','Passes completed'],['blocks','Blocks landed'],['tackles','Tackles made'],['interceptions','Interceptions'],['recoveries','Loose balls recovered'],['yards','Ground gained']];
+  const star = res.star;
+  const starPlayer = star && [...home.players, ...away.players].find(p => p.id === star.id);
+  const portrait = starPlayer ? `assets/${raceById(starPlayer.race).file}-${starPlayer.position}-portrait-happy.png` : '';
+  const moments = res.events.filter(e => ['touchdown','interception'].includes(e.type));
+  return `<div class="match-report-grid"><section class="panel"><p class="eyebrow">The match in numbers</p><table class="match-stat-table"><thead><tr><th>${esc(home.short)}</th><th>Match stats</th><th>${esc(away.short)}</th></tr></thead><tbody>${stats.map(([key,label])=>`<tr><td>${res.stats.A[key]}</td><th>${label}</th><td>${res.stats.B[key]}</td></tr>`).join('')}</tbody></table></section><section class="panel star-player"><p class="eyebrow">Player of the match</p>${portrait ? `<img src="${portrait}" width="150" height="150" alt="${esc(star.name)}">` : ''}<h2>${esc(star?.name || 'A team effort')}</h2><p>${star ? `${star.touchdowns} touchdowns · ${star.tackles} tackles · ${star.blocks} blocks` : ''}</p><p class="muted">${star ? esc(star.side === 'A' ? home.name : away.name) : ''}</p></section></div><section class="panel key-moments"><h2>The turning points</h2>${moments.length ? `<ol>${moments.map(e=>`<li><time>${Math.floor(e.t/60)}:${String(Math.floor(e.t%60)).padStart(2,'0')}</time><span class="${e.type}">${e.type === 'touchdown' ? 'TOUCHDOWN' : 'INTERCEPTION'}</span><p>${esc(e.text)}</p><strong>${e.scoreA} : ${e.scoreB}</strong></li>`).join('')}</ol>` : '<p class="muted">Both defenses held their ground.</p>'}</section>`;
+}
+
+function renderExhibitionResult() {
+  const { res, teams } = ui.exhibitionResult;
+  const title = res.winner === 'draw' ? 'Honors even.' : `${teams[res.winner].short} take the win.`;
+  return `<section class="panel exhibition-final"><p class="eyebrow">Full time · Exhibition</p><div class="final-score"><span>${esc(teams.A.name)}</span><strong>${res.scoreA} : ${res.scoreB}</strong><span>${esc(teams.B.name)}</span></div><h2>${esc(title)}</h2><div class="row"><button class="ember" data-act="watch-again">Watch again</button><button class="ghost" data-act="rematch-exhibition">Play a rematch</button><button class="ghost" data-act="open-exhibition">Change the matchup</button><button class="ghost" data-act="leave-exhibition">${game ? 'Back to my club' : 'Choose a club'}</button></div></section>${renderMatchStats(res, teams.A, teams.B)}`;
+}
+
 function renderMatchShell() {
-  return `<div class="match-layout">
-    <canvas id="pitch" width="800" height="600" aria-label="Animated fantasy football match"></canvas>
-    <div class="row"><button type="button" class="ghost" data-act="finish-match">Skip to result</button><button type="button" class="ember" id="continue" data-act="continue" ${ui.playback?.done ? '' : 'hidden'}>Continue</button></div>
-  </div>`;
+  return `<div class="match-stage"><canvas id="pitch" width="1280" height="720" aria-label="Live fantasy football match"></canvas><div class="match-controls"><button data-act="match-pause">${ui.paused ? 'Resume' : 'Pause'}</button><button data-act="match-speed">${ui.speed}× speed</button><button data-act="replay-toggle">Auto replay ${ui.autoReplay ? 'on' : 'off'}</button><button data-act="replay-last">Replay last big play</button><button data-act="fullscreen">Full screen</button><button data-act="finish-match">Skip to result</button><button class="ember" id="continue" data-act="continue" ${ui.playback?.done ? '' : 'hidden'}>Match report →</button></div></div>`;
 }
 
 function renderPost() {
@@ -585,7 +606,7 @@ function renderPost() {
     <p>Gate ${pay.gate}g + sponsor ${pay.sponsor}g = ${pay.total}g. Fans ${fansBefore} → ${fansAfter}.</p>
     ${notes ? `<ul class="muted" style="text-align:left">${notes}</ul>` : '<p class="muted">No fresh injuries, no level-ups.</p>'}
     ${next}
-  </div>`;
+  </div>${renderMatchStats(mine.res, teamById(game, mine.a), teamById(game, mine.b))}`;
 }
 
 function renderReview() {
@@ -621,7 +642,7 @@ function renderDone() {
     <p class="muted">You collected ${pay.total}g. Cups ${game.cups}. Division titles ${game.titles}.</p>
     <p class="muted">Next season the rivals come back sharper (+${game.season} to every stat). Your squad, gold, fans, and buildings stay. Injuries clear.</p>
     <button type="button" class="ember" data-act="next">Start season ${game.season + 1}</button>
-  </div>`;
+  </div>${renderMatchStats(report.res, home, away)}`;
 }
 
 function paintStill() {
@@ -947,190 +968,44 @@ function drawPitch(ctx, homeRace, awayRace, fans, stadiumLevel) {
   ctx.fillRect(0, 460, 800, 48);
 }
 
-function startPlayback(res, meta) {
-  const roster = {};
-  for (const [id, side] of [[meta.a, 'A'], [meta.b, 'B']]) {
-    for (const player of teamById(game, id).players) roster[player.id] = { player, side };
-  }
-  ui.playback = { res, meta, roster, t: 0, done: false };
-  ui.screen = 'match';
-  ui.paused = false;
-  render();
-  lastTick = performance.now();
+async function startPlayback(res, meta, sourceTeams = game?.teams) {
   stopLoop();
-  const loop = (now) => {
-    if (ui.screen !== 'match' || !ui.playback) return;
-    const raw = Math.min(0.05, (now - lastTick) / 1000);
-    lastTick = now;
-    if (!ui.paused && !ui.playback.done) {
-      ui.playback.t += raw * ui.speed;
-      if (ui.playback.t >= ui.playback.res.duration) {
-        ui.playback.t = ui.playback.res.duration;
-        ui.playback.done = true;
-        const btn = document.getElementById('continue');
-        if (btn) btn.hidden = false;
+  const request = (ui.playbackRequest || 0) + 1; ui.playbackRequest = request;
+  ui.screen = 'loading-match'; render();
+  const roster = {};
+  const teams = {};
+  for (const [id, side] of [[meta.a, 'A'], [meta.b, 'B']]) {
+    teams[side] = sourceTeams.find(t => t.id === id);
+    for (const player of teams[side].players) roster[player.id] = { player, side };
+  }
+  for (const team of Object.values(teams)) loadRaceArt(team.race);
+  const prefixes = Object.values(teams).map(team => raceById(team.race).file + '-');
+  await Promise.all(Object.values(images).filter(rec => prefixes.some(prefix => rec.key.startsWith(prefix)) || ['pitch','ball'].includes(rec.key)).map(rec => rec.img.decode().catch(() => {})));
+  if (request !== ui.playbackRequest || ui.screen !== 'loading-match') return;
+  ui.playback = { res, meta, roster, teams, t: 0, done: false, replay: null, replayed: new Set() };
+  ui.screen = 'match'; ui.paused = false; flash('');
+  render(); lastTick = performance.now(); stopLoop();
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const loop = now => {
+    const pb = ui.playback;
+    if (ui.screen !== 'match' || !pb) return;
+    const raw = Math.min(.08, (now - lastTick) / 1000); lastTick = now;
+    if (!ui.paused && !pb.done) {
+      if (pb.replay) {
+        pb.replay.t += raw * .65;
+        if (pb.replay.t >= pb.replay.end) pb.replay = null;
+      } else {
+        pb.t += raw * ui.speed;
+        const highlight = pb.res.highlights?.find(h => h.event.type === 'touchdown' && pb.t >= h.event.t + 2.6 && pb.t < h.event.t + 3.4 && !pb.replayed.has(h.event.t));
+        if (highlight && ui.autoReplay && !reducedMotion) { pb.replayed.add(highlight.event.t); pb.replay = { ...highlight, t: highlight.start }; }
+        if (pb.t >= pb.res.duration) { pb.t = pb.res.duration; pb.done = true; const btn = document.getElementById('continue'); if (btn) btn.hidden = false; }
       }
     }
     const canvas = document.getElementById('pitch');
-    if (canvas) drawMatch(canvas.getContext('2d'));
+    if (canvas) drawBroadcast(canvas.getContext('2d'), pb, { images, drawPlayer, drawPortrait, drawBall }, { time: pb.replay?.t ?? pb.t, replay: !!pb.replay, paused: ui.paused, reducedMotion });
     raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
-}
-
-function drawMatch(ctx) {
-  const pb = ui.playback;
-  const res = pb.res;
-  ctx.imageSmoothingEnabled = false;
-  const home = teamById(game, pb.meta.a);
-  const away = teamById(game, pb.meta.b);
-  const ev = res.events.reduce((m, e) => (e.t <= pb.t ? e : m), res.events[0]);
-  const u = ev.dt > 0 ? Math.min(1, Math.max(0, (pb.t - ev.t) / ev.dt)) : 1;
-  const spot = ev.fromSpot + (ev.spot - ev.fromSpot) * u;
-  drawPitch(ctx, raceById(home.race), raceById(away.race), home.fans + away.fans, Math.max(home.stadiumLevel, away.stadiumLevel));
-
-  const los = 48 + (spot / 100) * 704;
-  const slots = [
-    { dx: 78, dy: 6 },
-    { dx: 130, dy: -34 },
-    { dx: 132, dy: 38 },
-    { dx: 188, dy: -12 },
-    { dx: 196, dy: 24 },
-  ];
-  const actors = [];
-  const seen = new Set();
-  const addId = (id) => {
-    if (!id || seen.has(id) || !pb.roster[id]) return;
-    seen.add(id);
-    actors.push(id);
-  };
-  for (const id of ev.fieldA || []) addId(id);
-  for (const id of ev.fieldB || []) addId(id);
-  for (const id of ev.down || []) addId(id);
-
-  const placed = actors.map((id) => {
-    const info = pb.roster[id];
-    const side = info.side;
-    const index = side === 'A' ? (ev.fieldA || []).indexOf(id) : (ev.fieldB || []).indexOf(id);
-    const slot = slots[Math.max(0, index) % slots.length];
-    const dir = side === 'A' ? -1 : 1;
-    const slotIndex = Math.max(0, index) % slots.length;
-    const rawX = los + dir * slot.dx;
-    // Keep centres 40px inside the painted field (x 36-764); fan out anyone pinned at a wall.
-    let x = rawX;
-    if (rawX > 724) x = 724 - slotIndex * 30;
-    else if (rawX < 76) x = 76 + slotIndex * 30;
-    // Spread feet across the painted grass (field y 210-460) instead of the bottom third.
-    const y = 378 + slot.dy * 2;
-    if (ev.carrierId === id) x += side === 'A' ? 16 : -16;
-    let pose = 'idle';
-    let frame = Math.floor(pb.t * 2) % 2;
-    const knocked = (ev.down || []).includes(id) || (ev.type === 'casualty' && ev.targetId === id);
-    if (knocked) { pose = 'down'; frame = 0; }
-    else if (ev.type === 'tackle' && ev.actorId === id) {
-      pose = 'tackle';
-      frame = u < 0.45 ? 0 : 1;
-      x += frame === 0 ? dir * 8 : -dir * 12;
-    } else if (ev.carrierId === id && (ev.type === 'run' || ev.type === 'touchdown' || ev.type === 'pass')) {
-      pose = 'run';
-      frame = Math.floor(pb.t * 8) % 2;
-    }
-    return { id, info, x, y, pose, frame, facing: side === 'A' ? 1 : -1 };
-  }).sort((a, b) => a.y - b.y);
-
-  for (const actor of placed) drawPlayer(ctx, actor.info.player, actor.x, actor.y, actor.facing, actor.pose, actor.frame);
-
-  const carrier = placed.find((a) => a.id === ev.carrierId);
-  const ballX = carrier ? carrier.x + carrier.facing * 18 : los;
-  const ballY = carrier ? carrier.y - 40 : 372;
-  drawBall(ctx, ballX, ballY + Math.sin(pb.t * 10) * 2);
-  if (carrier) {
-    ctx.fillStyle = '#140e0c';
-    ctx.font = '12px Courier New';
-    ctx.textAlign = 'center';
-    ctx.fillText(carrier.info.player.name, Math.round(carrier.x) + 1, Math.round(carrier.y) - PLAYER_H - 8);
-    ctx.fillStyle = '#fff8e8';
-    ctx.fillText(carrier.info.player.name, Math.round(carrier.x), Math.round(carrier.y) - PLAYER_H - 9);
-  }
-
-  ctx.fillStyle = 'rgba(12,8,6,0.88)';
-  ctx.fillRect(16, 10, 768, 42);
-  ctx.font = '16px Courier New';
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#fff8e8';
-  ctx.fillText(home.short, 28, 36);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#fff8e8';
-  ctx.fillText(away.short, 772, 36);
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#fff8e8';
-  ctx.font = 'bold 22px Courier New';
-  ctx.fillText(`${ev.scoreA}  –  ${ev.scoreB}`, 400, 38);
-  ctx.font = '14px Courier New';
-  ctx.fillText(ev.clock || '', 560, 36);
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#f0c14a';
-  ctx.fillText(pb.meta.label, 200, 24);
-
-  ctx.fillStyle = '#140e0c';
-  ctx.fillRect(0, 508, 800, 92);
-  ctx.fillStyle = '#f4e6cf';
-  ctx.font = '18px Courier New';
-  const prev = res.events[res.events.indexOf(ev) - 1];
-  if (prev) {
-    ctx.fillStyle = '#8d7b66';
-    ctx.fillText(prev.text.slice(0, 72), 16, 540);
-  }
-  ctx.fillStyle = '#f4e6cf';
-  ctx.fillText((ev.text || '').slice(0, 72), 16, 570);
-
-  if (u < 0.92) {
-    if (ev.popup === 'TOUCHDOWN!' && ev.actorId && pb.roster[ev.actorId]) {
-      ctx.save();
-      ctx.translate(24, 150);
-      drawPortrait(ctx, 150, 180, pb.roster[ev.actorId].player, 'happy');
-      ctx.restore();
-    } else if (ev.type === 'tackle' && ev.actorId && pb.roster[ev.actorId]) {
-      ctx.save();
-      ctx.translate(626, 168);
-      drawPortrait(ctx, 140, 168, pb.roster[ev.actorId].player, 'angry');
-      ctx.restore();
-    } else if (ev.popup === 'CASUALTY!') {
-      if (ev.targetId && pb.roster[ev.targetId]) {
-        ctx.save();
-        ctx.translate(24, 150);
-        drawPortrait(ctx, 140, 170, pb.roster[ev.targetId].player, 'hurt');
-        ctx.restore();
-      }
-      if (ev.actorId && ev.actorId !== ev.targetId && pb.roster[ev.actorId]) {
-        ctx.save();
-        ctx.translate(636, 168);
-        drawPortrait(ctx, 130, 156, pb.roster[ev.actorId].player, 'angry');
-        ctx.restore();
-      }
-    }
-  }
-
-  if (ev.popup && u < 0.9) {
-    const color = ev.popup === 'CASUALTY!' ? '#ff5a4a' : ev.popup === 'FUMBLE!' ? '#ffb020' : '#ffe566';
-    ctx.font = 'bold 48px Courier New';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#140e0c';
-    for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [0, 3]]) ctx.fillText(ev.popup, 400 + dx, 250 + dy);
-    ctx.fillStyle = color;
-    ctx.fillText(ev.popup, 400, 250);
-    ctx.textAlign = 'left';
-  }
-
-  if (ui.paused) {
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(250, 280, 300, 64);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 28px Courier New';
-    ctx.textAlign = 'center';
-    ctx.fillText('PAUSED', 400, 322);
-    ctx.textAlign = 'left';
-  }
 }
 
 function onContinue() {
@@ -1138,7 +1013,10 @@ function onContinue() {
   ui.applying = true;
   stopLoop();
   const pending = ui.playback.meta.kind;
-  if (pending === 'final') {
+  if (pending === 'exhibition') {
+    ui.exhibitionResult = { res: ui.playback.res, teams: ui.playback.teams };
+    ui.playback = null; ui.screen = 'exhibition-result';
+  } else if (pending === 'final') {
     resolveFinal(game);
     ui.playback = null;
     ui.screen = 'done';
@@ -1170,16 +1048,50 @@ function act(name, el) {
     render();
     return;
   }
+  if (name === 'open-exhibition') { ui.screen = 'exhibition'; flash(''); render(); return; }
+  if (name === 'leave-exhibition') { ui.screen = game ? game.phase === 'league' ? 'hub' : game.phase : 'select'; render(); return; }
+  if (name === 'start-exhibition' || name === 'rematch-exhibition') {
+    if (name === 'rematch-exhibition') ui.exhibition.seed = Math.floor(Math.random() * 100000);
+    const ex = ui.exhibition;
+    if (ex.home === ex.away) { flash('Choose two different clubs.'); return; }
+    const sample = newGame(ex.home, 42);
+    const home = teamById(sample, ex.home), away = teamById(sample, ex.away);
+    home.tactic = ex.tacticA; away.tactic = ex.tacticB;
+    const res = simulateMatch(home, away, ex.seed);
+    startPlayback(res, { a: home.id, b: away.id, kind: 'exhibition', label: 'Exhibition' }, sample.teams);
+    return;
+  }
+  if (name === 'watch-again' && ui.exhibitionResult) {
+    const { res, teams } = ui.exhibitionResult;
+    startPlayback(res, { a: teams.A.id, b: teams.B.id, kind: 'exhibition', label: 'Exhibition' }, [teams.A, teams.B]); return;
+  }
+  if (name === 'match-pause') { ui.paused = !ui.paused; el.textContent = ui.paused ? 'Resume' : 'Pause'; return; }
+  if (name === 'match-speed') { ui.speed = ui.speed === 1 ? 2 : ui.speed === 2 ? 4 : 1; el.textContent = `${ui.speed}× speed`; return; }
+  if (name === 'replay-toggle') { ui.autoReplay = !ui.autoReplay; el.textContent = `Auto replay ${ui.autoReplay ? 'on' : 'off'}`; return; }
+  if (name === 'replay-last' && ui.playback) {
+    const pb = ui.playback;
+    const h = pb.res.highlights.filter(h => h.event.t <= pb.t).at(-1);
+    if (h) { el.textContent = 'Replay last big play'; pb.replay = { ...h, t: h.start }; pb.done = false; ui.paused = false; }
+    else el.textContent = 'No big play yet';
+    return;
+  }
+  if (name === 'fullscreen') { document.querySelector('.match-stage')?.requestFullscreen?.().catch(() => {}); return; }
+  if (name === 'finish-match' && ui.playback) { ui.playback.done = true; onContinue(); return; }
+  if (name === 'continue') { onContinue(); return; }
   if (!game) return;
+  if (name === 'set-tactic' && TACTICS[el.dataset.tactic]) { playerTeam(game).tactic = el.dataset.tactic; render(); return; }
+  if (name === 'choose-sub') { ui.swapId = ui.swapId === el.dataset.id ? null : el.dataset.id; render(); return; }
+  if (name === 'swap-starter' && ui.swapId) {
+    const team = playerTeam(game), chosen = pickLineup(team.players, team.lineup).map(p => p.id);
+    const incoming = team.players.find(p => p.id === ui.swapId && !p.injury);
+    if (incoming && chosen.includes(el.dataset.id) && !chosen.includes(incoming.id)) team.lineup = chosen.map(id => id === el.dataset.id ? incoming.id : id);
+    ui.swapId = null; render(); return;
+  }
+  if (name === 'auto-lineup') { delete playerTeam(game).lineup; ui.swapId = null; render(); return; }
   if (name === 'claim') {
     const result = claimGoal(game, el.dataset.goal);
     flash(result.ok ? `${result.name}: +${result.reward}g for the club.` : result.reason);
     render();
-    return;
-  }
-  if (name === 'finish-match' && ui.playback) {
-    ui.playback.done = true;
-    onContinue();
     return;
   }
   if (name === 'tab') {
@@ -1286,6 +1198,7 @@ function act(name, el) {
 }
 
 document.body.addEventListener('change', event => {
+  if (event.target.dataset.exhibition) { ui.exhibition[event.target.dataset.exhibition] = event.target.value; render(); return; }
   const playerId = event.target.dataset.activityPlayer;
   if (!playerId || !game) return;
   const selectedId = event.target.id;

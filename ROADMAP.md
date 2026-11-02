@@ -6,7 +6,7 @@ The target is a charming club-building management game with brutal fantasy footb
 
 Twelve original teams with race stats/traits and four position types each; two six-team divisions; ten fixtures per season; a cup final; gold and fans; recruitment and rerolls; individual stat training; player XP and levels; healing; stadium and training-ground upgrades; automatic five-player lineup selection; seeded match outcomes; event-driven side-view match playback; multiple seasons. 282 PNGs provide art for all twelve teams. It is a playable prototype, with a clean separation between simulation and presentation.
 
-Matches are automatic rating checks followed by generated events and animation. This is not a spatial Blood Bowl rules simulation, and the player does not currently choose a formation, lineup or tactical plan. The next season repeats the same competition with rival stats increased. There is no promotion ladder, sponsor negotiation, staff, academy, free facility placement or daily club simulation.
+The inherited matches were automatic rating checks followed by generated events and animation. The third development pass below replaces that engine. The competition still repeats with rival stats increased; there is no promotion ladder, sponsor negotiation, staff, academy, free facility placement or daily club simulation.
 
 ## First development pass
 
@@ -22,15 +22,25 @@ Training-ground upgrades now add coaching places and reduce coaching prices. The
 
 Validated with 12 Node tests, including mixed activities, budgets, capacities, injuries, level-ups, deterministic bonuses, roster changes, multi-season reports, idempotence and save migration. Browser verification completed a season through real weekly/match controls, tested reloads, clinic recovery, the squad shortcut and all seven management screens at 390px. A diagnostic 240-season run used free practice, not optimized coaching, and is not a balance verdict.
 
-## Next priorities
+## Third development pass: matches for the showcase
 
-1. **A living club.** The weekly planning and facility mechanics now exist. Next, connect the generated artwork to a compact overhead or isometric ground, show players at their assigned stations, add construction feedback, and consider staff/scouting activities. Free placement and real-time activity are still future work.
-2. **Meaningful coaching choices.** Select the starting five and substitutes. Introduce a few understandable tactical plans (power running, passing, pressure defense) with matchup-specific tradeoffs. Wire them into simulation and show their effects in match events; avoid cosmetic buttons or a universally best setting.
-3. **Player attachment.** Season and career statistics, named achievements, distinct growth potential and skills, standout moments, and a post-match player report. Make hiring a rookie and developing a star feel different from buying four numbers.
-4. **A progression ladder.** Local leagues leading to harder competitions, promotions and relegation, unlockable opponents/facilities/staff, and milestone celebrations. Replace endless flat stat boosts with authored stages and meaningful unlocks.
-5. **Readable, lively matches.** Strong possession cues, formation-aware movement, better spacing, clearer play outcomes, substitutions and concise highlights. Existing art is painted rather than Kairosoft-style pixel art; decide on a consistent miniature-character direction before commissioning an entire replacement set.
-6. **Economy and pacing.** Simulate and play coached seasons, evaluate races/strategies and catch dominant choices. Add sponsor deals/fan events only when they create a useful decision. The 20-season-per-team free-practice baseline is diagnostic, not proof of fair or fun balance.
-7. **Production reliability.** Lazy-load the selected team/opponent instead of preloading most of 49 MB of art, compress assets, portable save backups/migrations, automated browser tests in CI, accessible match text, and a deeper mobile interaction pass.
+The immediate goal is an engaging few minutes on screen. The new deterministic spatial engine resolves movement, blocking, handoffs, pass flight, catches, interceptions, tackles, loose-ball recoveries and counterattacks. Six alternating possessions can extend to two overtime possessions. Injuries remove players; fit reserves enter at the next possession. The actual simulation generates the recorded positions and events used by playback.
+
+Coaches can choose five starters and power running, wide passing or pressure/counter tactics. Stats affect movement and contests directly, so weekly training feeds into match behavior. The broadcast adds a following camera, possession/clock/score graphics, contact effects, expression portraits, touchdown celebrations, slow-motion replays, fullscreen and a report with statistics, player of the match and turning points. Exhibition mode reaches the action without advancing a career. The opening Orcs/Elves seed gives a repeatable showcase using real simulation outcomes.
+
+New artwork fills all missing portrait expressions and provides grounds plus four levels each of training/stadium artwork. The clubhouse uses the building images. Team sprite sets now load on demand, and match playback waits for their decode.
+
+Validation covers deterministic recorded/headless results, no input mutation, score/event consistency, finite in-bounds positions, equal overtime opportunities, injury removal, chosen starters, tactic differences, save validation and lineup cleanup after releasing a player. Browser checks complete a match with eight auto replays, a manual replay, all 12 teams, fullscreen/pause/speed controls, return to an unchanged career and mobile layouts. Full weekly/season regression still passes. These checks establish behavior and reliability, not finished competitive balance.
+
+## Next priorities after this match update
+
+1. **Signature players.** A small set of visible abilities, such as a charging blocker, evasive runner or precise passer, plus distinctive celebrations. Tie each effect to an understandable tradeoff and a clear on-field cue.
+2. **A coaching moment.** One limited call per match, such as protect the lead or commit to an all-out attack. It should change positioning and risk immediately, with enough time to read the outcome.
+3. **Sound and animation polish.** Crowd reactions, distinct pass/catch/impact sounds, stronger run cycles and quieter idle moments. Continue improving spacing and ball readability from actual captured play.
+4. **Visible weekly development.** Put assigned players at their training stations and show an individual improvement before its next match. Add modest construction and upgrade celebrations.
+5. **Player memory.** Persist season statistics, milestones and memorable rivalries. The current player-of-the-match report is per match; long-term player records remain future work.
+
+Promotion ladders, staff trees, sponsors and a larger economy can wait until the short playable showcase is compelling. Race/tactic balance needs coached playtesting; mobile portrait matches are functional but landscape/fullscreen is the presentation target.
 
 ## Validation of this pass
 

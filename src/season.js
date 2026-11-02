@@ -177,6 +177,8 @@ function toSim(team) {
     name: team.name,
     race: team.race,
     trait: team.trait,
+    tactic: team.tactic,
+    lineup: team.lineup,
     players: team.players.map((p) => ({
       id: p.id,
       name: p.name,
@@ -188,8 +190,8 @@ function toSim(team) {
   };
 }
 
-export function simById(state, idA, idB, seed) {
-  return simulateMatch(toSim(teamById(state, idA)), toSim(teamById(state, idB)), seed);
+export function simById(state, idA, idB, seed, options = {}) {
+  return simulateMatch(toSim(teamById(state, idA)), toSim(teamById(state, idB)), seed, options);
 }
 
 function resultOf(scoreFor, scoreAgainst) {
@@ -380,6 +382,7 @@ export function release(state, playerId) {
   const index = team.players.findIndex((p) => p.id === playerId);
   if (index < 0) return { ok: false, reason: 'No such player.' };
   const [gone] = team.players.splice(index, 1);
+  if (team.lineup) team.lineup = team.lineup.filter(id => id !== playerId);
   if (state.week) delete state.week.assignments[playerId];
   return { ok: true, name: gone.name };
 }
@@ -444,7 +447,7 @@ export function resolveRound(state) {
   const reports = [];
   for (const [a, b] of state.schedule[state.round]) {
     const seed = fixtureSeed(state, state.round, a, b);
-    const res = simById(state, a, b, seed);
+    const res = simById(state, a, b, seed, { record: a === state.playerId || b === state.playerId });
     const report = applyFixture(state, a, b, res);
     reports.push({ a, b, res, report });
     if (a === state.playerId || b === state.playerId) {

@@ -29,7 +29,18 @@ Choose one of 12 teams, build your club, recruit and train players, then watch f
 - **Recruit:** a three-player scouting pool and paid rerolls.
 - **Upgrades:** three levels each of training ground, club clinic and stadium. These increase weekly capacity, improve treatment, reduce costs and increase match income.
 - **League:** two divisions, standings and cup qualification.
-- **Match:** projected results from 40 sample simulations, automatic lineup, animated playback, pause, 1x/2x/4x and skip to result.
+- **Match:** choose your starting five and power, passing or pressure tactics. Watch spatial five-a-side play with pause, 1x/2x/4x, fullscreen, slow-motion replays and detailed match reports.
+- **Exhibition:** immediately watch any two clubs without changing a career. The opening Orcs vs Elves matchup uses roster seed 42 and match seed 3; its result emerges from the same engine as career matches. Watch again repeats it; rematch chooses a fresh seed.
+
+## Match engine and broadcast
+
+Players move on a 100 by 60 field in 0.1-second steps. Strength changes blocking/tackle contests; speed changes movement; agility changes dodges, catches, pickups and interceptions; passing changes throw accuracy. Power running uses two lead blockers and early handoffs. Wide passing spreads receivers and throws earlier. Pressure defense sends extra defenders after the carrier and leaves more space behind them.
+
+Six alternating possessions have a 24-second play clock. Reaching the opposing end zone scores a touchdown. Tackles spill a live ball; either team can recover it or intercept a pass and counterattack in the same possession. Knocked-down players get back up; injured players leave and fit reserves enter at the next possession. Ties get one extra possession per side and can still end level. The cup retains the league-record tiebreaker after overtime. This is an original continuous simulation, not official Blood Bowl rules.
+
+Playback interpolates recorded positions rather than inventing plays after a score roll. The scoreboard follows the displayed frame, including during replays. Scores, interceptions, contacts and injuries drive the broadcast overlays; post-match statistics come from those same events. Auto replays show the last five seconds before a touchdown at slow speed. Reduced-motion preference suppresses auto replays and camera shake. Exhibitions never award career money, injuries or XP.
+
+For promo capture: **Watch an exhibition → Watch the match → Full screen**. Keep the opening Orcs/Elves plans for a repeatable showcase with handoffs, passing, turnovers, an injury substitution and overtime. A rematch uses a new match seed. Browser fullscreen and capture resolution depend on your display.
 
 ## Weekly management loop
 
@@ -61,7 +72,10 @@ Saves are local to the browser and site origin, not synced across devices. Clear
 ## Code
 
 - `src/data.js`: teams, economy, player generation and progression.
-- `src/match.js`: deterministic automatic match simulation, independent of DOM.
+- `src/match.js`: public match API, independent of DOM.
+- `src/match-core.js`: seeded RNG, lineup selection and shared ratings helpers.
+- `src/spatial-match.js`: movement, contact, ball physics, tactical decisions and recorded match state.
+- `src/match-view.js`: interpolated canvas broadcast, scoreboard, effects and replay presentation.
 - `src/season.js`: schedule, league results, roster transactions, history and season advancement.
 - `src/club.js`: one-time club goals and rewards.
 - `src/save.js`: versioned persistence, legacy migration and validation.
@@ -73,6 +87,6 @@ Saves are local to the browser and site origin, not synced across devices. Clear
 
 ## Art
 
-The repository includes 282 PNGs (about 49 MB): team crests, pitch, painted player bodies/poses, neutral portraits and supporting art. Many alternate portrait expressions are not supplied; these fall back to neutral. All twelve teams have painted assets. Press M to inspect failed requests for supplied art.
+The repository includes 411 PNGs: team crests, pitch, painted player bodies/poses, all four portrait expressions for all 48 positions, clubhouse grounds, and training/stadium levels 0 through 3. The delivered 129-image artwork batch was checked for filenames, dimensions, alpha and accidental duplicates. Club/opponent sprite sets load on demand; the match waits for their decode before playback. Press M to inspect failed requests for supplied art.
 
 See [ROADMAP.md](ROADMAP.md) for the design assessment and next steps.
