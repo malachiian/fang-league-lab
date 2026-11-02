@@ -130,14 +130,17 @@
     .stat { font-size: 13px; }
   }
 </style>
+<link rel="stylesheet" href="src/club.css">
+<meta name="description" content="Build a fantasy football club. Recruit misfits, train stars, grow your ground and fight for the Fang League cup.">
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
       <h1>FANG LEAGUE</h1>
-      <p class="tag">Brutal fantasy football. Twelve sides. One cup.</p>
+      <p class="tag">Little club. Big hits. Legendary seasons.</p>
     </div>
+    <span class="edition">CLUB MANAGER · DEVELOPMENT EDITION</span>
   </header>
   <div id="hud" aria-label="Season status">
     <div class="stat" id="hud-gold"></div>
@@ -153,8 +156,8 @@
   <main id="view"></main>
   <footer class="danger">
     <button type="button" class="danger" id="restart">Restart</button>
-    <button type="button" class="ghost" id="missing-btn">Missing art</button>
-    <p>Restart is off on its own so a misclick doesn't wipe the season. It asks first, then puts speed back to 1×. Press M for the missing-art list.</p>
+    <button type="button" class="ghost" id="missing-btn" hidden>Missing art</button>
+    <p id="save-status" role="status">Your club starts here</p>
   </footer>
   <aside id="missing" hidden>
     <h2>Missing art</h2>
@@ -163,8 +166,8 @@
   </aside>
 </div>
 <div id="modal" class="modal" hidden>
-  <div class="modal-card panel">
-    <h2>Restart the league?</h2>
+  <div class="modal-card panel" role="dialog" aria-modal="true" aria-labelledby="restart-title">
+    <h2 id="restart-title">Restart the league?</h2>
     <p>This throws out your squad, gold, fans, and season, and sets speed back to 1×.</p>
     <div class="row">
       <button type="button" class="danger" id="modal-yes">Restart</button>

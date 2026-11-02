@@ -1,0 +1,6 @@
+{
+  "name": "fang-league-lab",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test tests/*.test.js", "balance": "node sim.js" }
+}

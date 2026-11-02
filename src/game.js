@@ -44,6 +44,15 @@ import {
   upgrade,
 } from './season.js';
 import { hashSeed, matchRuleText, pickLineup, simulateMatch } from './match.js';
+import { clubGoals, claimGoal } from './club.js';
+import { saveCareer, loadCareer, clearCareer } from './save.js';
+import { ASSET_FILES } from './assets.js';
+
+const storage = {
+  getItem: key => window.localStorage.getItem(key),
+  setItem: (key, value) => window.localStorage.setItem(key, value),
+  removeItem: key => window.localStorage.removeItem(key),
+};
 
 const PLAYER_H = ART.playerHeight;
 const PAINTED_RACES = new Set(['orcs', 'humans', 'elves', 'goblins', 'undead', 'halflings', 'dwarves', 'ratfolk', 'lizardfolk', 'darkelves', 'ogres', 'doomsworn']);
@@ -56,7 +65,7 @@ let showMissing = false;
 
 const ui = {
   screen: 'select',
-  tab: 'squad',
+  tab: 'club',
   selectedRace: 'orcs',
   speed: 1,
   paused: false,
@@ -71,6 +80,7 @@ const ui = {
 };
 
 let game = null;
+let saveWarning = '';
 let raf = 0;
 let lastTick = 0;
 
@@ -83,6 +93,8 @@ function noteMissing(src) {
 }
 
 function want(key, src, opts = {}) {
+  // Optional poses use the existing body fallback without issuing a failing request.
+  if (!ASSET_FILES.has(src)) return null;
   const over = ASSET_OVERRIDES[key] || {};
   const rec = {
     key,
@@ -94,6 +106,7 @@ function want(key, src, opts = {}) {
   };
   rec.img.onload = () => {
     rec.ok = true;
+    if (key.startsWith('icon-')) renderHud();
     if (ui.screen !== 'match') paintStill();
   };
   rec.img.onerror = () => {
@@ -207,11 +220,15 @@ function stopLoop() {
 }
 
 function doRestart() {
+  if (!clearCareer(storage)) {
+    flash('Could not clear the saved career. Please allow browser storage and try again.');
+    return;
+  }
   stopLoop();
   ui.speed = 1;
   ui.paused = false;
   ui.screen = 'select';
-  ui.tab = 'squad';
+  ui.tab = 'club';
   ui.trainId = null;
   ui.releaseId = null;
   ui.playback = null;
@@ -225,6 +242,7 @@ function doRestart() {
 }
 
 function render() {
+  document.body.dataset.screen = ui.screen;
   renderHud();
   if (flashEl) flashEl.textContent = ui.flash || '';
   if (ui.screen === 'select') view.innerHTML = renderSelect();
@@ -234,6 +252,10 @@ function render() {
   else if (ui.screen === 'review') view.innerHTML = renderReview();
   else if (ui.screen === 'done') view.innerHTML = renderDone();
   paintStill();
+  const saved = saveCareer(storage, game, ui);
+  if (!saved.skipped) saveWarning = saved.ok ? '' : saved.message;
+  const saveStatus = document.getElementById('save-status');
+  if (saveStatus) saveStatus.textContent = saveWarning || (!game ? 'Your club starts here' : ui.screen === 'match' ? 'Career saved before kickoff' : 'Career saved on this browser');
   const speedBtn = document.getElementById('speed');
   const pauseBtn = document.getElementById('pause');
   const onMatch = ui.screen === 'match';
@@ -306,7 +328,7 @@ function renderSelect() {
     </button>`;
   }).join('');
   const race = raceById(ui.selectedRace);
-  return `<p class="muted">Pick a side. Twelve teams, two divisions of six. Ten division matches, then the division winners meet in the cup. Faces are bare — jersey color is how you tell them apart.</p>
+  return `<div class="intro"><p class="eyebrow">A small club. A big ambition.</p><h2>Build a team worth cheering for.</h2><p>Recruit misfits. Train your stars. Grow your home ground. Then watch them fight for the cup.</p></div>
     <div class="hero panel" style="border-left:8px solid ${race.colors.primary}">
       <canvas class="face" width="220" height="260" data-face="${race.id}"></canvas>
       <div>
@@ -316,13 +338,14 @@ function renderSelect() {
         <button type="button" class="ember" data-act="lead">Lead the ${esc(race.team)}</button>
       </div>
     </div>
-    <div class="grid">${cards}</div>`;
+    <div class="section-heading"><h2>Choose your club</h2><span>12 teams · 2 divisions · 1 cup</span></div><div class="grid team-grid">${cards}</div>`;
 }
 
 function renderHub() {
   const team = playerTeam(game);
   const race = raceById(team.race);
   const tabs = [
+    ['club', 'Clubhouse'],
     ['squad', 'Squad'],
     ['recruit', 'Recruit'],
     ['upgrades', 'Upgrades'],
@@ -330,7 +353,8 @@ function renderHub() {
     ['match', 'Match'],
   ].map(([id, label]) => `<button type="button" class="tab${ui.tab === id ? ' on' : ''}" data-act="tab" data-tab="${id}">${label}</button>`).join('');
   let body = '';
-  if (ui.tab === 'squad') body = renderSquad(team, race);
+  if (ui.tab === 'club') body = renderClub(team, race);
+  else if (ui.tab === 'squad') body = renderSquad(team, race);
   else if (ui.tab === 'recruit') body = renderRecruit(team);
   else if (ui.tab === 'upgrades') body = renderUpgrades(team);
   else if (ui.tab === 'league') body = renderTable();
@@ -341,8 +365,23 @@ function renderHub() {
     const opp = teamById(game, fx[0] === team.id ? fx[1] : fx[0]);
     banner = `Next: ${esc(opp.name)} (${esc(raceById(opp.race).name)}: ${esc(raceById(opp.race).style)}).`;
   }
-  return `<p class="style">${esc(team.name)} · season ${game.season} · ${banner}</p>
-    <div class="tabs">${tabs}</div>${body}`;
+  return `<div class="club-heading"><div><p class="eyebrow">Season ${game.season} · ${esc(divisionName(team.division))}</p><h2>${esc(team.name)}</h2></div><p class="muted">${banner}</p></div>
+    <nav class="tabs" aria-label="Club management">${tabs}</nav>${body}`;
+}
+
+function renderClub(team, race) {
+  const fx = playerFixture(game);
+  const opponent = fx && teamById(game, fx[0] === team.id ? fx[1] : fx[0]);
+  const fit = healthyCount(team);
+  const history = (game.history || []).slice(-5).reverse();
+  const goals = clubGoals(game);
+  const complete = goals.filter(g => g.claimed).length;
+  const lineup = pickLineup(team.players);
+  const players = lineup.map((p, i) => `<img class="practice-player player-${i}" src="assets/${race.file}-${p.position}-idle.png" alt="${esc(p.name)} practicing" style="--i:${i}">`).join('');
+  const facilities = [['training', 'Training ground', team.trainingLevel], ['stadium', 'Stadium', team.stadiumLevel]].map(([id, label, level]) => `<button class="ground-building ${id}" data-act="tab" data-tab="upgrades"><span class="building-roof"></span><strong>${label}</strong><span>Level ${level} / 3</span></button>`).join('');
+  const results = history.map(m => `<li><span class="result-badge ${m.us > m.them ? 'win' : m.us < m.them ? 'loss' : 'draw'}">${m.us > m.them ? 'W' : m.us < m.them ? 'L' : 'D'}</span><span>${esc(teamById(game, m.opponentId).short)}<small>Season ${m.season} · Match ${m.round}</small></span><strong>${m.us} : ${m.them}</strong></li>`).join('');
+  const goalCards = goals.map(g => `<article class="goal ${g.claimed ? 'claimed' : ''}"><div class="goal-top"><span>${g.claimed ? 'Completed' : g.complete ? 'Reward ready' : 'Club goal'}</span><strong>+${g.reward}g</strong></div><h3>${esc(g.name)}</h3><p>${esc(g.detail)}</p><progress max="${g.target}" value="${Math.min(g.target, g.value)}" aria-label="${esc(g.name)}"></progress><div class="goal-bottom"><span>${Math.min(g.target, g.value)} / ${g.target}</span>${g.claimed ? '<span>Collected ✓</span>' : `<button data-act="claim" data-goal="${g.id}" ${g.complete ? '' : 'disabled'}>Collect</button>`}</div></article>`).join('');
+  return `<div class="club-layout"><section class="grounds panel"><div class="section-heading"><div><p class="eyebrow">Home sweet home</p><h2>Your club grounds</h2></div><span class="badge">${team.fans} fans</span></div><div class="ground-scene" aria-label="Club grounds with links to facilities and squad"><div class="ground-path"></div>${facilities}<button class="practice-pitch" data-act="tab" data-tab="squad" aria-label="Manage the squad"><span class="halfway"></span><span class="center-circle"></span>${players}<span class="pitch-caption">Meet your squad</span></button><span class="ground-sign">${esc(team.short)} FC</span></div><div class="ground-summary"><span><strong>${team.players.length}</strong> players</span><span><strong>${fit}</strong> fit to play</span><span><strong>${game.trainsLeft}</strong> training sessions</span></div></section><aside class="club-sidebar"><section class="panel fixture-card"><p class="eyebrow">Next up · Match ${game.round + 1} of 10</p><h2>${opponent ? esc(opponent.name) : 'Season complete'}</h2><p class="muted">${opponent ? esc(raceById(opponent.race).style) : 'Time to celebrate.'}</p><p>${fit < 5 ? `Only ${fit} fit. Visit the squad to heal injured players.` : 'Your team is ready to take the field.'}</p><button class="ember" data-act="tab" data-tab="match">Prepare for match →</button></section><section class="panel"><h2>Recent form</h2>${results ? `<ul class="form-list">${results}</ul>` : '<p class="muted">A new badge. A blank record. Your story starts with the first whistle.</p>'}<p class="muted">${game.titles} division titles · ${game.cups} cups</p></section></aside></div><div class="section-heading"><div><p class="eyebrow">Build something that lasts</p><h2>Club ambitions</h2></div><span>${complete} of ${goals.length} achieved</span></div><div class="goals-grid">${goalCards}</div>`;
 }
 
 function statLine(player) {
@@ -488,7 +527,7 @@ function renderMatchup(team) {
   if (!fx) return `<div class="panel"><p>No match scheduled.</p></div>`;
   const oppId = fx[0] === team.id ? fx[1] : fx[0];
   const opp = teamById(game, oppId);
-  const key = `${game.season}:${game.round}:${team.players.map((p) => `${p.id}.${p.injury}.${p.stats.passing}.${p.stats.speed}`).join(',')}:${opp.players.map((p) => p.injury).join(',')}`;
+  const key = JSON.stringify([game.season, game.round, team.players, opp.players]);
   if (ui.estimateKey !== key) {
     let w = 0; let d = 0; let l = 0;
     for (let i = 0; i < 40; i += 1) {
@@ -524,8 +563,8 @@ function renderMatchup(team) {
 
 function renderMatchShell() {
   return `<div class="match-layout">
-    <canvas id="pitch" width="800" height="600"></canvas>
-    <button type="button" class="ember" id="continue" data-act="continue" hidden>Continue</button>
+    <canvas id="pitch" width="800" height="600" aria-label="Animated fantasy football match"></canvas>
+    <div class="row"><button type="button" class="ghost" data-act="finish-match">Skip to result</button><button type="button" class="ember" id="continue" data-act="continue" ${ui.playback?.done ? '' : 'hidden'}>Continue</button></div>
   </div>`;
 }
 
@@ -545,7 +584,7 @@ function renderPost() {
   const headline = result === 'win' ? 'WIN' : result === 'loss' ? 'LOSS' : 'DRAW';
   const next = post.toReview
     ? '<button type="button" class="ember" data-act="to-review">See the table</button>'
-    : '<button type="button" class="ember" data-act="to-hub">Back to the squad</button>';
+    : '<button type="button" class="ember" data-act="to-hub">Back to the clubhouse</button>';
   return `<div class="panel end">
     <p class="muted">${esc(playerTeam(game).short)} ${us} – ${them} ${esc(opp.short)}</p>
     <h2>${headline}</h2>
@@ -1024,10 +1063,10 @@ function drawMatch(ctx) {
   ctx.fillRect(16, 10, 768, 42);
   ctx.font = '16px Courier New';
   ctx.textAlign = 'left';
-  ctx.fillStyle = raceById(home.race).colors.secondary;
+  ctx.fillStyle = '#fff8e8';
   ctx.fillText(home.short, 28, 36);
   ctx.textAlign = 'right';
-  ctx.fillStyle = raceById(away.race).colors.secondary;
+  ctx.fillStyle = '#fff8e8';
   ctx.fillText(away.short, 772, 36);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#fff8e8';
@@ -1043,7 +1082,7 @@ function drawMatch(ctx) {
   ctx.fillRect(0, 508, 800, 92);
   ctx.fillStyle = '#f4e6cf';
   ctx.font = '18px Courier New';
-  const prev = res.events[Math.max(0, res.events.indexOf(ev) - 1)];
+  const prev = res.events[res.events.indexOf(ev) - 1];
   if (prev) {
     ctx.fillStyle = '#8d7b66';
     ctx.fillText(prev.text.slice(0, 72), 16, 540);
@@ -1101,7 +1140,7 @@ function drawMatch(ctx) {
 }
 
 function onContinue() {
-  if (ui.applying || !ui.playback) return;
+  if (ui.applying || !ui.playback || !ui.playback.done) return;
   ui.applying = true;
   stopLoop();
   const pending = ui.playback.meta.kind;
@@ -1132,12 +1171,23 @@ function act(name, el) {
     const seed = (Math.random() * 0x7fffffff) | 0;
     game = newGame(ui.selectedRace, seed);
     ui.screen = 'hub';
-    ui.tab = 'squad';
+    ui.tab = 'club';
     flash(`${playerTeam(game).name} open the season with ${BALANCE.startGold}g and ${BALANCE.startFans} fans.`);
     render();
     return;
   }
   if (!game) return;
+  if (name === 'claim') {
+    const result = claimGoal(game, el.dataset.goal);
+    flash(result.ok ? `${result.name}: +${result.reward}g for the club.` : result.reason);
+    render();
+    return;
+  }
+  if (name === 'finish-match' && ui.playback) {
+    ui.playback.done = true;
+    onContinue();
+    return;
+  }
   if (name === 'tab') {
     ui.tab = el.dataset.tab;
     ui.trainId = null;
@@ -1210,7 +1260,7 @@ function act(name, el) {
   if (name === 'continue') onContinue();
   if (name === 'to-hub') {
     ui.screen = 'hub';
-    ui.tab = 'squad';
+    ui.tab = 'club';
     render();
   }
   if (name === 'to-review') {
@@ -1227,7 +1277,7 @@ function act(name, el) {
   if (name === 'next') {
     nextSeason(game);
     ui.screen = 'hub';
-    ui.tab = 'squad';
+    ui.tab = 'club';
     flash(`Season ${game.season}. Rivals are +${game.season - 1} to every stat. Your injuries cleared.`);
     render();
   }
@@ -1251,9 +1301,11 @@ document.getElementById('pause').addEventListener('click', () => {
 
 document.getElementById('restart').addEventListener('click', () => {
   document.getElementById('modal').hidden = false;
+  document.getElementById('modal-no').focus();
 });
 document.getElementById('modal-no').addEventListener('click', () => {
   document.getElementById('modal').hidden = true;
+  document.getElementById('restart').focus();
 });
 document.getElementById('modal-yes').addEventListener('click', () => {
   document.getElementById('modal').hidden = true;
@@ -1268,6 +1320,17 @@ document.getElementById('missing-btn').addEventListener('click', () => {
   paintMissing();
 });
 document.addEventListener('keydown', (event) => {
+  if (!document.getElementById('modal').hidden) {
+    if (event.key === 'Escape') {
+      document.getElementById('modal').hidden = true;
+      document.getElementById('restart').focus();
+    }
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      document.getElementById(document.activeElement.id === 'modal-no' ? 'modal-yes' : 'modal-no').focus();
+    }
+    return;
+  }
   if (event.key !== 'm' && event.key !== 'M') return;
   if (event.metaKey || event.ctrlKey || event.altKey) return;
   showMissing = !showMissing;
@@ -1286,6 +1349,12 @@ window.__league = {
   simulateMatch,
 };
 
+const career = loadCareer(storage);
+if (career.game) {
+  game = career.game;
+  ui.screen = game.phase === 'league' ? 'hub' : game.phase;
+  ui.tab = 'club';
+}
 loadArt();
-flash('Pick a side. Speed starts at 1×.');
+flash(career.message || (game ? `Welcome back to ${playerTeam(game).name}.` : ''));
 render();

@@ -94,6 +94,8 @@ export function newGame(raceId, seed) {
     tableNoted: false,
     cupNoted: false,
     finalApplied: false,
+    history: [],
+    claimedGoals: [],
   };
   refreshPool(state);
   return state;
@@ -436,6 +438,12 @@ export function resolveRound(state) {
     const res = simById(state, a, b, seed);
     const report = applyFixture(state, a, b, res);
     reports.push({ a, b, res, report });
+    if (a === state.playerId || b === state.playerId) {
+      const home = a === state.playerId;
+      (state.history ||= []).push({ season: state.season, round: state.round + 1,
+        opponentId: home ? b : a, home, us: home ? res.scoreA : res.scoreB,
+        them: home ? res.scoreB : res.scoreA });
+    }
   }
   decrementServed(state, wasOut);
   aiManage(state);
