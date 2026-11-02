@@ -87,6 +87,8 @@ Saves are local to the browser and site origin, not synced across devices. Clear
 
 ## Art
 
-The repository includes 411 PNGs: team crests, pitch, painted player bodies/poses, all four portrait expressions for all 48 positions, clubhouse grounds, and training/stadium levels 0 through 3. The delivered 129-image artwork batch was checked for filenames, dimensions, alpha and accidental duplicates. Club/opponent sprite sets load on demand; the match waits for their decode before playback. Press M to inspect failed requests for supplied art.
+The repository includes 419 PNGs: team crests, pitch, painted player bodies/poses, all four portrait expressions for all 48 positions, clubhouse grounds, and training/stadium levels 0 through 3. The delivered 129-image artwork batch was checked for filenames, dimensions, alpha and accidental duplicates. Club/opponent sprite sets load on demand; the match waits for their decode before playback. Press M to inspect failed requests for supplied art.
 
 See [ROADMAP.md](ROADMAP.md) for the design assessment and next steps.
+
+Human and Orc players have two running images per position. The match renderer alternates them at seven frame changes per second with individual timing offsets. Draw-time crop rectangles align the transparent padding; reduced-motion mode uses a fixed frame. Original run art remains intact beside the new *-run-alt.png assets.

@@ -18,6 +18,23 @@ export const ART = {
 };
 
 export const ASSET_OVERRIDES = {
+  // Transparent padding is trimmed at draw time to align both running frames.
+  'human-lineman-run': { crop: [3, 47, 506, 462] },
+  'human-lineman-run-alt': { crop: [17, 115, 1236, 1121] },
+  'human-blitzer-run': { crop: [3, 25, 506, 484] },
+  'human-blitzer-run-alt': { crop: [0, 23, 1240, 1231] },
+  'human-catcher-run': { crop: [22, 2, 468, 508] },
+  'human-catcher-run-alt': { crop: [0, 0, 1216, 1254] },
+  'human-thrower-run': { crop: [29, 2, 454, 508] },
+  'human-thrower-run-alt': { crop: [33, 8, 1193, 1246] },
+  'orc-lineman-run': { crop: [3, 30, 506, 479] },
+  'orc-lineman-run-alt': { crop: [0, 17, 1240, 1237] },
+  'orc-blitzer-run': { crop: [2, 30, 508, 480] },
+  'orc-blitzer-run-alt': { crop: [0, 47, 1224, 1207] },
+  'orc-brute-run': { crop: [3, 26, 506, 483] },
+  'orc-brute-run-alt': { crop: [0, 21, 1253, 1233] },
+  'orc-thrower-run': { crop: [3, 43, 506, 466] },
+  'orc-thrower-run-alt': { crop: [0, 104, 1240, 1150] },
   'icon-gold': { pixelated: true },
   'icon-fans': { pixelated: true },
 };

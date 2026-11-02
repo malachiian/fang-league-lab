@@ -113,6 +113,7 @@ function want(key, src, opts = {}) {
     img: new Image(),
     pixelated: over.pixelated ?? opts.pixelated ?? false,
     frameWidth: over.frameWidth || opts.frameWidth || 0,
+    crop: over.crop || null,
   };
   rec.img.onload = () => {
     rec.ok = true;
@@ -147,11 +148,16 @@ function loadRaceArt(raceId) {
   for (const pos of race.positions) {
     const stem = `${race.file}-${pos.id}`;
     for (const pose of ART.poses) want(`${stem}-${pose}`, `assets/${stem}-${pose}.png`);
+    if (race.id === 'humans' || race.id === 'orcs') want(`${stem}-run-alt`, `assets/${stem}-run-alt.png`);
     for (const expr of ART.expressions) want(`${stem}-portrait-${expr}`, `assets/${stem}-portrait-${expr}.png`);
   }
 }
 
 function frameOf(rec, frameIndex) {
+  if (rec.crop) {
+    const [sx, sy, sw, sh] = rec.crop;
+    return { sx, sy, sw, sh, count: 1 };
+  }
   const w = rec.img.naturalWidth || 1;
   const h = rec.img.naturalHeight || 1;
   let fw = rec.frameWidth;
@@ -172,7 +178,11 @@ function pitchBody(race, position) {
   return firstOk(keys);
 }
 
-function poseArt(race, position, pose) {
+function poseArt(race, position, pose, frame = 0) {
+  if (pose === 'run' && frame % 2 === 1) {
+    const alternate = images[`${race.file}-${position}-run-alt`];
+    if (alternate?.ok) return { rec: alternate, fake: false };
+  }
   if (pose !== 'idle') {
     const specific = images[`${race.file}-${position}-${pose}`];
     if (specific?.ok) return { rec: specific, fake: false };
@@ -868,7 +878,7 @@ function drawPlayer(ctx, player, x, y, facing, pose, frame) {
   ctx.ellipse(px, py - 1, PLAYER_H * 0.16, PLAYER_H * 0.045, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
-  const art = poseArt(race, player.position, pose);
+  const art = poseArt(race, player.position, pose, frame);
   ctx.save();
   ctx.translate(px, py);
   ctx.scale(facing < 0 ? -1 : 1, 1);

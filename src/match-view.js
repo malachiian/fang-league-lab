@@ -78,7 +78,8 @@ export function drawBroadcast(ctx,pb,assets,settings={}){
     const bounce=p.pose==='run'&&!settings.reducedMotion?Math.sin(t*18+p.number)*2:0;
     ctx.translate(0,bounce);ctx.scale(size,size);
     if(p.pose==='run'&&!settings.reducedMotion)ctx.rotate(Math.sin(t*18+p.number)*.025);
-    assets.drawPlayer(ctx,info.player,0,0,p.facing,p.pose,Math.floor(t*8)%2);ctx.restore();ctx.globalAlpha=1;
+    const strideFrame = settings.reducedMotion ? 0 : Math.floor(t * 7 + p.number * .7) % 2;
+    assets.drawPlayer(ctx,info.player,0,0,p.facing,p.pose,strideFrame);ctx.restore();ctx.globalAlpha=1;
     if(!p.out){ctx.fillStyle=p.side==='A'?'#633329':'#204c59';box(ctx,world.x-8,world.y+7,16,15,4);label(ctx,String(p.number),world.x,world.y+18,10,'#fff','center');}
     if(isCarrier||event?.actorId===p.id&&t-event.t<1.5){
       ctx.fillStyle='#0a1c20d9';ctx.font='700 12px Trebuchet MS';const width=ctx.measureText(info.player.name).width+18;
