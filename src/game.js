@@ -61,8 +61,7 @@ const PAINTED_RACES = new Set(['orcs', 'humans', 'elves', 'goblins', 'undead', '
 const view = document.getElementById('view');
 const flashEl = document.getElementById('flash');
 const images = {};
-const missingArt = [];
-const missingLogged = new Set();
+const missingArt = new Set();
 let showMissing = false;
 
 const ui = {
@@ -90,11 +89,15 @@ let raf = 0;
 let lastTick = 0;
 
 function noteMissing(src) {
-  if (missingLogged.has(src)) return;
-  missingLogged.add(src);
-  missingArt.push(src);
+  const url = new URL(src, document.baseURI).href;
+  if (missingArt.has(url)) return;
+  missingArt.add(url);
   console.warn('[fang-league] missing art:', src);
   paintMissing();
+}
+
+function clearMissing(src) {
+  if (missingArt.delete(new URL(src, document.baseURI).href)) paintMissing();
 }
 
 function want(key, src, opts = {}) {
@@ -112,6 +115,7 @@ function want(key, src, opts = {}) {
   };
   rec.img.onload = () => {
     rec.ok = true;
+    clearMissing(src);
     if (key.startsWith('icon-')) renderHud();
     if (ui.screen !== 'match') paintStill();
   };
@@ -188,12 +192,16 @@ function paintMissing() {
   const box = document.getElementById('missing');
   const list = document.getElementById('missing-list');
   const count = document.getElementById('missing-count');
-  if (!box || !list) return;
+  const button = document.getElementById('missing-btn');
+  if (!box || !list || !count || !button) return;
+  const total = missingArt.size;
+  button.hidden = total === 0;
+  button.textContent = `Missing art (${total})`;
+  if (!total) showMissing = false;
   box.hidden = !showMissing;
-  count.textContent = missingArt.length
-    ? `${missingArt.length} file${missingArt.length === 1 ? '' : 's'} 404'd. Shape stand-ins are on screen.`
-    : 'Every requested file loaded.';
-  list.innerHTML = missingArt.map((src) => `<li>${esc(src)}</li>`).join('');
+  button.setAttribute('aria-expanded', String(showMissing));
+  count.textContent = total ? `${total} image${total === 1 ? '' : 's'} could not load. Refresh to try again.` : '';
+  list.innerHTML = [...missingArt].map(src => `<li>${esc(new URL(src).pathname.split('/').pop())}</li>`).join('');
 }
 
 function esc(value) {
@@ -241,6 +249,7 @@ function doRestart() {
 }
 
 function render() {
+  paintMissing();
   document.body.dataset.screen = ui.screen;
   if (game) loadRaceArt(playerTeam(game).race);
   if (ui.screen === 'exhibition') { loadRaceArt(ui.exhibition.home); loadRaceArt(ui.exhibition.away); }
@@ -1241,9 +1250,20 @@ document.getElementById('modal').addEventListener('click', (event) => {
 });
 
 document.getElementById('missing-btn').addEventListener('click', () => {
+  if (!missingArt.size) return;
   showMissing = !showMissing;
   paintMissing();
 });
+
+// Clubhouse and report images are DOM elements rather than canvas-loader images.
+for (const type of ['error', 'load']) {
+  document.addEventListener(type, event => {
+    if (!(event.target instanceof HTMLImageElement)) return;
+    const src = event.target.currentSrc || event.target.getAttribute('src');
+    if (src) (type === 'error' ? noteMissing : clearMissing)(src);
+  }, true);
+}
+
 document.addEventListener('keydown', (event) => {
   if (!document.getElementById('modal').hidden) {
     if (event.key === 'Escape') {
@@ -1256,8 +1276,15 @@ document.addEventListener('keydown', (event) => {
     }
     return;
   }
+  if (event.key === 'Escape' && showMissing) {
+    showMissing = false;
+    paintMissing();
+    document.getElementById('missing-btn').focus();
+    return;
+  }
   if (event.key !== 'm' && event.key !== 'M') return;
   if (event.metaKey || event.ctrlKey || event.altKey) return;
+  if (!missingArt.size || event.target.closest('input, textarea, select, [contenteditable]')) return;
   showMissing = !showMissing;
   paintMissing();
 });

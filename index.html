@@ -159,12 +159,12 @@
   <main id="view"></main>
   <footer class="danger">
     <button type="button" class="danger" id="restart">Restart</button>
-    <button type="button" class="ghost" id="missing-btn" hidden>Missing art</button>
+    <button type="button" class="ghost" id="missing-btn" aria-controls="missing" aria-expanded="false" hidden>Missing art</button>
     <p id="save-status" role="status">Your club starts here</p>
   </footer>
   <aside id="missing" hidden>
-    <h2>Missing art</h2>
-    <p id="missing-count" class="muted"></p>
+    <h2>Artwork could not load</h2>
+    <p id="missing-count" class="muted" role="status"></p>
     <ul id="missing-list"></ul>
   </aside>
 </div>
