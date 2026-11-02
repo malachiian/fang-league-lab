@@ -61,4 +61,6 @@
 :root[data-theme="dark"] :is(.tactic-card > span,.versus) { color:#bed29d; }
 :root[data-theme="dark"] .key-moments li > span { color:#a9d9c3; }
 :root[data-theme="dark"] .key-moments li > span.touchdown { color:#f1d183; }
+:root[data-theme="dark"] .team-status.core { background:#31472a; color:#d2e5b7; }
+:root[data-theme="dark"] .team-status.wip { background:#483d26; color:#edd69e; }
 @media(max-width:560px) { .header-actions { width:100%; justify-content:space-between; gap:8px; }.header-actions button { padding:9px 11px; } }

@@ -49,6 +49,7 @@ import { renderWeekly, weekSteps, renderWeekReport } from './weekly-view.js';
 import { saveCareer, loadCareer, clearCareer } from './save.js';
 import { ASSET_FILES } from './assets.js';
 import { drawBroadcast } from './match-view.js';
+import { CORE_TEAMS, WIP_TEAMS } from './team-catalog.js';
 
 const storage = {
   getItem: key => window.localStorage.getItem(key),
@@ -67,7 +68,7 @@ let showMissing = false;
 const ui = {
   screen: 'select',
   tab: 'club',
-  selectedRace: 'orcs',
+  selectedRace: CORE_TEAMS[0].id,
   speed: 1,
   paused: false,
   flash: '',
@@ -324,10 +325,11 @@ function renderHud() {
 }
 
 function renderSelect() {
-  const cards = RACES.map((race) => {
+  const cards = (races) => races.map((race) => {
     const on = race.id === ui.selectedRace ? ' on' : '';
     const roles = race.positions.map((p) => `${p.count} ${p.label}`).join(' · ');
     return `<button type="button" class="card${on}" data-act="pick" data-race="${race.id}" style="border-left:8px solid ${race.colors.primary}">
+      ${teamStatus(race)}
       <div class="who">
         <canvas class="face" width="96" height="120" data-face="${race.id}"></canvas>
         <div>
@@ -345,13 +347,20 @@ function renderSelect() {
     <div class="hero panel" style="border-left:8px solid ${race.colors.primary}">
       <canvas class="face" width="220" height="260" data-face="${race.id}"></canvas>
       <div>
+        ${teamStatus(race)}
         <h2>${esc(race.team)}</h2>
         <p class="style">${esc(race.name)}: ${esc(race.style)}</p>
         <p class="muted">${esc(divisionName(race.division))}. ${esc(traitLabel(race.trait))}</p>
         <button type="button" class="ember" data-act="lead">Lead the ${esc(race.team)}</button>
       </div>
     </div>
-    <div class="section-heading"><h2>Choose your club</h2><span>12 teams · 2 divisions · 1 cup</span></div><div class="grid team-grid">${cards}</div>`;
+    <section aria-labelledby="core-teams-title"><div class="section-heading"><h2 id="core-teams-title">Core teams</h2><span>Our six featured clubs</span></div><div class="grid team-grid" data-team-group="core">${cards(CORE_TEAMS)}</div></section>
+    <section aria-labelledby="wip-teams-title"><div class="section-heading"><h2 id="wip-teams-title">Work in progress</h2><span>Playable previews · Still in development</span></div><div class="grid team-grid" data-team-group="wip">${cards(WIP_TEAMS)}</div></section>`;
+}
+
+function teamStatus(race) {
+  const core = CORE_TEAMS.includes(race);
+  return `<span class="team-status ${core ? 'core' : 'wip'}">${core ? 'Core team' : 'Work in progress'}</span>`;
 }
 
 function renderHub() {
@@ -567,7 +576,8 @@ function renderExhibition() {
   const ex = ui.exhibition;
   const side = (key, tacticKey, label) => {
     const race = raceById(ex[key]);
-    return `<article class="exhibition-team"><p class="eyebrow">${label}</p><canvas class="face" width="200" height="230" data-face="${race.id}"></canvas><label for="ex-${key}">Club</label><select id="ex-${key}" data-exhibition="${key}">${RACES.map(r => `<option value="${r.id}" ${r.id === race.id ? 'selected' : ''}>${r.team}</option>`).join('')}</select><label for="ex-${tacticKey}">Game plan</label><select id="ex-${tacticKey}" data-exhibition="${tacticKey}">${Object.entries(TACTICS).map(([id, p]) => `<option value="${id}" ${id === ex[tacticKey] ? 'selected' : ''}>${p.name} · ${p.short}</option>`).join('')}</select><p>${TACTICS[ex[tacticKey]].description}</p></article>`;
+    const options = [[CORE_TEAMS, 'Core teams'], [WIP_TEAMS, 'Work in progress']].map(([races, group]) => `<optgroup label="${group}">${races.map(r => `<option value="${r.id}" ${r.id === race.id ? 'selected' : ''}>${esc(r.team)}${group === 'Work in progress' ? ' · Work in progress' : ''}</option>`).join('')}</optgroup>`).join('');
+    return `<article class="exhibition-team"><p class="eyebrow">${label}</p><canvas class="face" width="200" height="230" data-face="${race.id}"></canvas>${teamStatus(race)}<label for="ex-${key}">Club</label><select id="ex-${key}" data-exhibition="${key}">${options}</select><label for="ex-${tacticKey}">Game plan</label><select id="ex-${tacticKey}" data-exhibition="${tacticKey}">${Object.entries(TACTICS).map(([id, p]) => `<option value="${id}" ${id === ex[tacticKey] ? 'selected' : ''}>${p.name} · ${p.short}</option>`).join('')}</select><p>${TACTICS[ex[tacticKey]].description}</p></article>`;
   };
   return `<section class="exhibition-intro"><p class="eyebrow">Five a side. No place to hide.</p><h2>LET THEM PLAY.</h2><p>Big hits. Desperate passes. One loose ball can change everything.</p></section><div class="exhibition-pair">${side('home','tacticA','Home club')}<div class="versus">VS</div>${side('away','tacticB','Away club')}</div><div class="exhibition-launch"><button class="ember" data-act="start-exhibition" ${ex.home === ex.away ? 'disabled' : ''}>Watch the match →</button><button class="ghost" data-act="leave-exhibition">${game ? 'Back to my club' : 'Start a club instead'}</button><p>Exhibitions keep your career untouched. Choose different clubs or plans to change the contest.</p></div>`;
 }
