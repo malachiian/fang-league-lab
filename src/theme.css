@@ -1,0 +1,64 @@
+/* Interface colors only: painted artwork and the match broadcast keep their palettes. */
+:root { color-scheme:light; }
+.header-actions { flex-wrap:wrap; gap:12px; }
+#theme-toggle { white-space:nowrap; }
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --ink:#e5ece4; --cream:#e5ece4; --dim:#a8b8ab;
+  --mud:#101b18; --panel:#1b2b24; --panel-2:#25392e; --line:#3b5143;
+  --good:#9bd6aa; --bad:#f0a69b; --ember:#347052;
+  --night-text:#e5ece4; --night-muted:#a8b8ab; --night-line:#3b5143;
+  --night-panel:#1b2b24; --night-raised:#25392e; --night-accent:#b9d99e;
+}
+:root[data-theme="dark"] body:not([data-screen="match"]) { background:radial-gradient(ellipse at 50% 0,#23362a,#101b18 65%); }
+:root[data-theme="dark"] header,
+:root[data-theme="dark"] footer.danger { border-color:var(--night-line); }
+:root[data-theme="dark"] h1 { color:#d3e5c0; text-shadow:0 2px #08130e; }
+:root[data-theme="dark"] :is(.tag,.edition,.eyebrow,.muted,.section-heading > span,.goal-top,.goal-bottom,.goal p,.form-list small,.ground-summary,.facility-top small,.facility-mini > p,.capacity,.assignment-player p,.assignment-choice label,.assignment-choice p,.week-budget dt,.report-list small,.exhibition-intro > p:last-child,.exhibition-team label,.exhibition-team > p:last-child,.exhibition-launch p,.key-moments time,.loading-match p) { color:var(--night-muted); }
+:root[data-theme="dark"] #hud { background:#17271f; border-color:var(--night-line); }
+:root[data-theme="dark"] #flash { color:#a7dcb0; }
+:root[data-theme="dark"] :is(.panel,.card,.goal,.facility-mini,.assignment-row,.exhibition-team) { background:var(--night-panel); border-color:var(--night-line); box-shadow:0 3px 0 #0b1711; }
+:root[data-theme="dark"] :is(button.card,button.card h2,.tactic-card) { color:var(--night-text); }
+:root[data-theme="dark"] :is(.style,button.card .style,.ground-summary strong,.capacity strong,.plan-valid,.previous-week summary,.end h2,.exhibition-intro h2) { color:var(--night-accent); }
+:root[data-theme="dark"] button.card .muted { color:var(--night-muted); }
+:root[data-theme="dark"] :is(button.ghost,.tab) { background:var(--night-raised); border-color:#526a53; color:var(--night-text); }
+:root[data-theme="dark"] :is(button.ember,.tab.on) { background:#347052; color:#fffdf2; border-color:#6f9d78; }
+:root[data-theme="dark"] button.danger { background:#442b29; color:#ffc2b4; border-color:#90675c; }
+:root[data-theme="dark"] :is(button,select):focus-visible { outline-color:#a3d7fa; }
+:root[data-theme="dark"] :is(.card.on,.tactic-card.selected) { background:#2c4532; outline-color:#a9c98c; border-color:#a9c98c; }
+:root[data-theme="dark"] .hero { background:linear-gradient(100deg,#303925,#1b2b24); }
+:root[data-theme="dark"] :is(canvas.crest,canvas.portrait,canvas.face,.assignment-player img) { background:#13211a; }
+:root[data-theme="dark"] .grounds .badge { background:#31472a; color:#d2e5b7; }
+:root[data-theme="dark"] .ground-scene { border-color:#3d5134; }
+:root[data-theme="dark"] :is(.ground-building strong,.ground-building > span:last-child) { background:#14271eea; color:#eef1dc; }
+:root[data-theme="dark"] .ground-sign { color:#fff8da; text-shadow:0 1px 3px #102919,0 0 3px #102919; }
+:root[data-theme="dark"] :is(.fixture-card,.week-budget) { background:#283322; }
+:root[data-theme="dark"] :is(.form-list li,th,td,.week-steps,.week-steps li,.capacity,.budget-total,.report-list li,.key-moments li) { border-color:var(--night-line); }
+:root[data-theme="dark"] :is(.result-badge.win,.badge.fit,.report-gains > span) { background:#2c4b32; color:#c6e4b5; }
+:root[data-theme="dark"] :is(.result-badge.loss,.badge.out) { background:#4c302d; color:#ffc2b4; }
+:root[data-theme="dark"] :is(.result-badge.draw,.goal-top strong) { background:#4c4329; color:#f3d98d; }
+:root[data-theme="dark"] :is(.badge.bench,.stats span,.why,.upgrade-preview) { background:var(--night-raised); color:#c3d2bd; }
+:root[data-theme="dark"] :is(progress,.bar),
+:root[data-theme="dark"] progress::-webkit-progress-bar { background:#334735; }
+:root[data-theme="dark"] progress::-webkit-progress-value { background:#a1bf7b; }
+:root[data-theme="dark"] :is(.goal.claimed,tr.me) { background:#2b3d29; }
+:root[data-theme="dark"] #missing { background:var(--night-panel); color:var(--night-text); border-color:var(--night-line); }
+:root[data-theme="dark"] .week-steps { background:#17271f; }
+:root[data-theme="dark"] .week-steps li { color:var(--night-muted); }
+:root[data-theme="dark"] .week-steps li > span { background:#354a32; color:#d1debf; }
+:root[data-theme="dark"] .week-steps .step-active { background:#334c31; color:#e0edcc; }
+:root[data-theme="dark"] .week-steps .step-active > span { background:#759456; color:#102012; }
+:root[data-theme="dark"] .week-steps .step-done { color:#b2d79e; }
+:root[data-theme="dark"] .facility-symbol { background:#344b2e; color:#cee3ae; }
+:root[data-theme="dark"] .facility-symbol.recovery { background:#49362c; color:#f1c2a7; }
+:root[data-theme="dark"] .facility-symbol.outreach { background:#2b4642; color:#acdad2; }
+:root[data-theme="dark"] :is(.capacity.over,.capacity.over strong,.injury-note,.plan-errors) { color:#ffb5a6; }
+:root[data-theme="dark"] :is(.assignment-choice select,.exhibition-team select) { background:#13251b; color:#e1ebd7; border-color:#607855; }
+:root[data-theme="dark"] .assignment-cost { color:#e4cf88; }
+:root[data-theme="dark"] .week-complete { background:linear-gradient(100deg,#30452a,#1b2b24); }
+:root[data-theme="dark"] .tactic-card { background:var(--night-panel); border-color:#526a53; }
+:root[data-theme="dark"] .tactic-card.selected { background:#2c4532; border-color:#a9c98c; }
+:root[data-theme="dark"] :is(.tactic-card > span,.versus) { color:#bed29d; }
+:root[data-theme="dark"] .key-moments li > span { color:#a9d9c3; }
+:root[data-theme="dark"] .key-moments li > span.touchdown { color:#f1d183; }
+@media(max-width:560px) { .header-actions { width:100%; justify-content:space-between; gap:8px; }.header-actions button { padding:9px 11px; } }

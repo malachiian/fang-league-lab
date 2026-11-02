@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fang League</title>
+<meta name="theme-color" content="#101b18">
+<script src="src/theme.js"></script>
 <style>
   :root {
     --ink: #140e0c;
@@ -131,6 +133,7 @@
   }
 </style>
 <link rel="stylesheet" href="src/club.css">
+<link rel="stylesheet" href="src/theme.css">
 <meta name="description" content="Build a fantasy football club. Recruit misfits, train stars, grow your ground and fight for the Fang League cup.">
 </head>
 <body>
@@ -140,7 +143,7 @@
       <h1>FANG LEAGUE</h1>
       <p class="tag">Little club. Big hits. Legendary seasons.</p>
     </div>
-    <div class="header-actions"><span class="edition">CLUB MANAGER · DEVELOPMENT EDITION</span><button class="ember" data-act="open-exhibition">Watch an exhibition →</button></div>
+    <div class="header-actions"><span class="edition">CLUB MANAGER · DEVELOPMENT EDITION</span><button type="button" class="ghost" id="theme-toggle" aria-label="Switch to light mode">☀ Light mode</button><button class="ember" data-act="open-exhibition">Watch an exhibition →</button></div>
   </header>
   <div id="hud" aria-label="Season status">
     <div class="stat" id="hud-gold"></div>
