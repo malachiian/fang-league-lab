@@ -6,7 +6,7 @@
 <title>Fang League · Built by Grok Bot</title>
 <meta name="author" content="Grok Bot">
 <meta name="theme-color" content="#101b18">
-<script>(function(){var c=(new URLSearchParams(location.search).get("credit")||"a").toLowerCase();document.documentElement.dataset.credit=/^[abc]$/.test(c)?c:"a";var u=new URLSearchParams(location.search).get("ui");if(/^[123]$/.test(u||""))document.documentElement.dataset.ui=u;})();</script>
+<script>(function(){var c=(new URLSearchParams(location.search).get("credit")||"a").toLowerCase();document.documentElement.dataset.credit=/^[abc]$/.test(c)?c:"a";var K="fangLeagueUi",u=new URLSearchParams(location.search).get("ui"),v="0";try{if(u!==null){v=/^[123]$/.test(u)?u:"0";localStorage.setItem(K,v);}else{var sv=localStorage.getItem(K);if(/^[123]$/.test(sv||""))v=sv;}}catch(e){if(/^[123]$/.test(u||""))v=u;}if(v!=="0")document.documentElement.dataset.ui=v;})();</script>
 <script src="src/theme.js"></script>
 <style>
   :root {
@@ -158,7 +158,7 @@
       <p class="tag">Little club. Big hits. Legendary seasons.</p>
       <p class="built-by">Built by <b>Grok Bot</b></p>
     </div>
-    <div class="header-actions"><span class="credit-badge" title="Built by Grok Bot"><span class="credit-mark" aria-hidden="true">G</span>Built by Grok Bot</span><span class="edition">CLUB MANAGER · DEVELOPMENT EDITION</span><button type="button" class="ghost" id="theme-toggle" aria-label="Switch to light mode">☀ Light mode</button><button class="ember" data-act="open-exhibition">Watch an exhibition →</button></div>
+    <div class="header-actions"><span class="credit-badge" title="Built by Grok Bot"><span class="credit-mark" aria-hidden="true">G</span>Built by Grok Bot</span><div class="ui-picker" role="radiogroup" aria-label="Choose interface look"><span class="ui-picker-label" aria-hidden="true">Look</span><button type="button" role="radio" data-ui-pick="0">Default</button><button type="button" role="radio" data-ui-pick="1">Arcade Neon</button><button type="button" role="radio" data-ui-pick="2">Stadium</button><button type="button" role="radio" data-ui-pick="3">Parchment</button></div><span class="edition">CLUB MANAGER · DEVELOPMENT EDITION</span><button type="button" class="ghost" id="theme-toggle" aria-label="Switch to light mode">☀ Light mode</button><button class="ember" data-act="open-exhibition">Watch an exhibition →</button></div>
   </header>
   <div id="hud" aria-label="Season status">
     <div class="stat" id="hud-gold"></div>
@@ -202,6 +202,18 @@
     el.hidden = false;
     el.textContent = 'The game failed to start. If this file was opened directly, serve the folder instead (see the README). ' + (event.message || '');
   });
+</script>
+<script>
+(function(){
+  var K="fangLeagueUi",root=document.documentElement,btns=[].slice.call(document.querySelectorAll("[data-ui-pick]"));
+  function sync(){var cur=root.dataset.ui||"0";btns.forEach(function(b){var on=b.dataset.uiPick===cur;b.setAttribute("aria-checked",on?"true":"false");b.tabIndex=on?0:-1;});}
+  function apply(v,focus){if(v==="0")delete root.dataset.ui;else root.dataset.ui=v;try{localStorage.setItem(K,v);}catch(e){}
+    var q=new URLSearchParams(location.search);if(v==="0")q.delete("ui");else q.set("ui",v);var qs=q.toString();
+    history.replaceState(history.state,"",location.pathname+(qs?"?"+qs:"")+location.hash);sync();if(focus)btns.filter(function(b){return b.dataset.uiPick===v;})[0].focus();}
+  btns.forEach(function(b,i){b.addEventListener("click",function(){apply(b.dataset.uiPick);});
+    b.addEventListener("keydown",function(e){var d=e.key==="ArrowRight"||e.key==="ArrowDown"?1:e.key==="ArrowLeft"||e.key==="ArrowUp"?-1:0;if(!d)return;e.preventDefault();apply(btns[(i+d+btns.length)%btns.length].dataset.uiPick,true);});});
+  sync();
+})();
 </script>
 <script type="module" src="src/game.js"></script>
 </body>

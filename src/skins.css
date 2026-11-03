@@ -164,3 +164,31 @@ html[data-ui="3"] body[data-screen="match"] .match-stage { border:6px solid #a87
 html[data-ui="1"] .week-steps li.step-active { background:#2a0c2a !important; color:#ff8af0 !important; }
 /* Plain buttons (e.g. recruit "Sign for …") */
 html[data-ui] main button:not(.ghost):not(.ember):not(.danger):not(.card):not(.tab):not(.tactic-card):not(.ground-building) { background:var(--sk-raised) !important; color:var(--sk-text) !important; border:2px solid var(--sk-accent) !important; box-shadow:none !important; }
+
+/* ========== Look picker (header) ========== */
+.ui-picker { display:inline-flex; align-items:center; gap:0; padding:3px; border:1px solid var(--line,#3b5143); border-radius:999px; background:var(--panel-2,#25392e); }
+.ui-picker-label { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); padding:0 8px 0 9px; }
+.ui-picker button { background:transparent !important; border:0 !important; box-shadow:none !important; color:var(--dim) !important; font-size:11px !important; padding:6px 11px !important; border-radius:999px !important; white-space:nowrap; text-transform:none; letter-spacing:0; }
+.ui-picker button:hover { color:var(--ink) !important; }
+.ui-picker button[aria-checked="true"] { background:var(--ember,#347052) !important; color:#fffdf2 !important; font-weight:700; }
+.ui-picker button:focus-visible { outline:2px solid #a3d7fa !important; outline-offset:1px; }
+:root:not([data-theme="dark"]):not([data-ui]) .ui-picker { background:#f9f8ef; border-color:#bcc6ac; }
+:root:not([data-theme="dark"]):not([data-ui]) .ui-picker button { color:#44563e !important; }
+:root:not([data-theme="dark"]):not([data-ui]) .ui-picker button[aria-checked="true"] { background:#3f6b46 !important; color:#fff !important; }
+html[data-ui="1"] .ui-picker { background:#07060d; border:2px solid #00e5ff; border-radius:0; box-shadow:0 0 8px rgba(0,229,255,.5); }
+html[data-ui="1"] .ui-picker button { border-radius:0 !important; color:#7df9ff !important; text-transform:uppercase; font-size:10px !important; }
+html[data-ui="1"] .ui-picker button[aria-checked="true"] { background:#ff2bd6 !important; color:#07060d !important; box-shadow:0 0 10px #ff2bd6 !important; }
+html[data-ui="1"] .ui-picker-label { color:#ff8af0; }
+html[data-ui="2"] .ui-picker { background:#060d1f; border:2px solid #c3cde3; border-radius:0; transform:skewX(-10deg); }
+html[data-ui="2"] .ui-picker > * { transform:skewX(10deg); }
+html[data-ui="2"] .ui-picker button { border-radius:0 !important; color:#fff !important; text-transform:uppercase; }
+html[data-ui="2"] .ui-picker button[aria-checked="true"] { background:#d81e2c !important; }
+html[data-ui="2"] .ui-picker-label { color:#c3cde3; }
+html[data-ui="3"] .ui-picker { background:#2a1c11; border:2px solid #c9a14a; border-radius:6px; }
+html[data-ui="3"] .ui-picker button { border-radius:4px !important; color:#e8d6b0 !important; }
+html[data-ui="3"] .ui-picker button[aria-checked="true"] { background:radial-gradient(circle at 35% 30%,#b33a2a,#7a1a10) !important; color:#fff3d6 !important; }
+html[data-ui="3"] .ui-picker-label { color:#d8c39b; font-style:italic; }
+/* Make room for the picker on one header row */
+.header-actions .edition { display:none; }
+html[data-ui="2"] body:not([data-screen="match"]) { background:#060d1f !important; }
+html[data-ui="2"] header { background:#0b1a3a; box-shadow:0 0 0 100vmax #0b1a3a; clip-path:inset(-100vmax -100vmax 0 -100vmax); }
