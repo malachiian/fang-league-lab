@@ -6,6 +6,7 @@
 <title>Fang League · Built by Grok Bot</title>
 <meta name="author" content="Grok Bot">
 <meta name="theme-color" content="#101b18">
+<script>(function(){var c=(new URLSearchParams(location.search).get("credit")||"a").toLowerCase();document.documentElement.dataset.credit=/^[abc]$/.test(c)?c:"a";})();</script>
 <script src="src/theme.js"></script>
 <style>
   :root {
@@ -122,8 +123,17 @@
     border-top: 3px dashed #4a3428;
     display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
   }
-  .built-by { margin: 4px 0 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+  .built-by { margin: 4px 0 0; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); opacity: .85; }
+  .built-by b { color: var(--gold); font-weight: 700; }
   footer .credit { margin-left: auto; font-size: 12px; color: var(--dim); }
+  .credit-badge, .credit-corner { display: none; }
+  :root[data-credit="b"] .credit-badge { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 6px; border-radius: 999px; border: 1px solid var(--gold); background: var(--panel-2); color: var(--cream); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+  .credit-mark { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--gold); color: var(--mud); font-size: 10px; font-weight: 900; letter-spacing: 0; }
+  :root[data-credit="b"] .built-by, :root[data-credit="c"] .built-by { display: none; }
+  :root[data-credit="c"] .credit-corner { display: inline-flex; align-items: center; gap: 6px; position: fixed; right: 12px; bottom: 12px; z-index: 50; padding: 4px 10px 4px 5px; border-radius: 6px; background: rgba(10,16,14,.82); border: 1px solid rgba(255,255,255,.18); color: #e5ece4; font-size: 11px; font-weight: 700; letter-spacing: .05em; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+  :root[data-credit="c"] .credit-corner .credit-mark { width: 16px; height: 16px; font-size: 9px; }
+  :root[data-credit="c"] footer .credit { display: none; }
+  :root[data-credit="c"] body[data-screen="match"] .credit-corner { bottom: 8px; right: 8px; opacity: .8; font-size: 10px; }
   footer.danger p { margin: 0; color: var(--dim); max-width: 460px; }
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.72); display: grid; place-items: center; z-index: 5; padding: 16px; }
   .modal[hidden] { display: none; }
@@ -145,9 +155,9 @@
     <div>
       <h1>FANG LEAGUE</h1>
       <p class="tag">Little club. Big hits. Legendary seasons.</p>
-      <p class="built-by">Built by Grok Bot</p>
+      <p class="built-by">Built by <b>Grok Bot</b></p>
     </div>
-    <div class="header-actions"><span class="edition">CLUB MANAGER · DEVELOPMENT EDITION</span><button type="button" class="ghost" id="theme-toggle" aria-label="Switch to light mode">☀ Light mode</button><button class="ember" data-act="open-exhibition">Watch an exhibition →</button></div>
+    <div class="header-actions"><span class="credit-badge" title="Built by Grok Bot"><span class="credit-mark" aria-hidden="true">G</span>Built by Grok Bot</span><span class="edition">CLUB MANAGER · DEVELOPMENT EDITION</span><button type="button" class="ghost" id="theme-toggle" aria-label="Switch to light mode">☀ Light mode</button><button class="ember" data-act="open-exhibition">Watch an exhibition →</button></div>
   </header>
   <div id="hud" aria-label="Season status">
     <div class="stat" id="hud-gold"></div>
@@ -167,6 +177,7 @@
     <p id="save-status" role="status">Your club starts here</p>
     <p class="credit">Fang League · Built by Grok Bot</p>
   </footer>
+  <div class="credit-corner" aria-hidden="true"><span class="credit-mark">G</span>Built by Grok Bot</div>
   <aside id="missing" hidden>
     <h2>Artwork could not load</h2>
     <p id="missing-count" class="muted" role="status"></p>
