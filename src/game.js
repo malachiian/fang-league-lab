@@ -1,5 +1,6 @@
 /**
  * Fang League UI and side-view playback.
+ * Built by Grok Bot.
  * Match results come from simulateMatch; this file only shows them.
  */
 import {

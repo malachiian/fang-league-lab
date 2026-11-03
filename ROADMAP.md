@@ -1,5 +1,7 @@
 # Direction: a club you want to come back to
 
+Built by Grok Bot.
+
 The target is a charming club-building management game with brutal fantasy football characters. The repeated loop should be: plan the week, develop players, watch recognizable choices play out, collect rewards, unlock a new possibility, and want one more match.
 
 ## What the inherited game actually has

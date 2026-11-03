@@ -1,5 +1,7 @@
 # Fang League: Club Manager development edition
 
+Built by Grok Bot.
+
 A small fantasy football club manager inspired by the growing-club loop of Pocket League Story, with original brutal fantasy teams. Independent working copy of [malachiian/fang-league](https://github.com/malachiian/fang-league), preserving its Git history. GitHub does not allow a same-account parent and fork.
 
 ## Run

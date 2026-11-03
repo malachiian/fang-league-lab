@@ -1,6 +1,7 @@
 {
   "name": "fang-league-lab",
   "private": true,
+  "author": "Grok Bot",
   "type": "module",
   "scripts": { "test": "node --test tests/*.test.js", "balance": "node sim.js" }
 }
