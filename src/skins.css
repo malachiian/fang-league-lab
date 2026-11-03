@@ -38,107 +38,129 @@ html[data-ui="1"] :is(.credit-badge,.credit-corner) { background:#07060d !import
 html[data-ui="1"] .credit-mark { background:#ff2bd6 !important; color:#07060d !important; border-radius:0 !important; }
 html[data-ui="1"] body[data-screen="match"] .match-stage { border:2px solid #ff2bd6; box-shadow:0 0 24px #ff2bd6; background:#07060d !important; }
 
-/* ========== 2. STADIUM BROADCAST ========== */
-html[data-ui="2"] { color-scheme:light; --ink:#0b1a3a; --cream:#0b1a3a; --dim:#3a4560; --gold:#d81e2c; }
+/* Shared fixes: intro copy and team status chips per skin */
+html[data-ui="1"] .intro p:not(.eyebrow) { color:#d8d3f5 !important; }
+html[data-ui="1"] .team-status { background:transparent !important; color:#7df9ff !important; border:1px solid #00e5ff; border-radius:0 !important; }
+html[data-ui="1"] .team-status.wip { color:#ffe14d !important; border-color:#ffe14d; }
+html[data-ui="1"] .week-steps { background:#0d0a1c !important; border:2px solid #00e5ff !important; border-radius:0 !important; }
+html[data-ui="1"] .week-steps li { background:transparent !important; color:#c9c3f0 !important; border-color:#2b2550 !important; }
+html[data-ui="1"] .week-steps li.step-active, html[data-ui="1"] .week-steps li.step-done { background:#2a0c2a !important; color:#ff8af0 !important; }
+html[data-ui] .week-steps li > span { color:inherit !important; background:rgba(128,128,128,.25) !important; }
+html[data-ui="1"] #flash { color:#7df9ff !important; }
+/* ========== Shared dark foundation for every skin ========== */
+html[data-ui="1"] { --sk-bg:#07060d; --sk-panel:#100c22; --sk-raised:#1a1433; --sk-text:#f2f0ff; --sk-muted:#c9c3f0; --sk-line:#3a2f6b; --sk-accent:#7df9ff; --sk-good:#7dffb0; --sk-bad:#ff8aa8; }
+html[data-ui="2"] { --sk-bg:#060d1f; --sk-panel:#0f1d3d; --sk-raised:#17295a; --sk-text:#ffffff; --sk-muted:#c3cde3; --sk-line:#2b3f72; --sk-accent:#ff4655; --sk-good:#8fe3a6; --sk-bad:#ff9aa2; }
+html[data-ui="3"] { --sk-bg:#1c130c; --sk-panel:#2a1c11; --sk-raised:#3a2717; --sk-text:#f3e3c0; --sk-muted:#d8c39b; --sk-line:#7a5a26; --sk-accent:#e0b04c; --sk-good:#b9dc8a; --sk-bad:#f2a38f; }
+html[data-ui] { color-scheme:dark !important; --ink:var(--sk-text); --cream:var(--sk-text); --dim:var(--sk-muted); --panel:var(--sk-panel); --panel-2:var(--sk-raised); --line:var(--sk-line); --mud:var(--sk-bg); --night-text:var(--sk-text); --night-muted:var(--sk-muted); --night-line:var(--sk-line); --night-panel:var(--sk-panel); --night-raised:var(--sk-raised); --night-accent:var(--sk-accent); }
+html[data-ui] #theme-toggle { display:none !important; }
+html[data-ui] body { color:var(--sk-text) !important; }
+html[data-ui] :is(.hero,.panel,.card,button.card,.card.on,.goal,.goal.claimed,.facility-mini,.assignment-row,.exhibition-team,.tactic-card,.tactic-card.selected,.fixture-card,.week-budget,.week-complete,#missing,.modal-card,.loading-match) { background:var(--sk-panel) !important; color:var(--sk-text) !important; }
+html[data-ui] :is(.stats span,.why,.upgrade-preview,.report-gains > span,.badge.bench,.grounds .badge,.goal-top strong,.ground-building strong,.ground-building > span:last-child,.facility-symbol,canvas.crest,canvas.portrait,canvas.face,.assignment-player img) { background:var(--sk-raised) !important; color:var(--sk-text) !important; }
+html[data-ui] :is(.bar,progress) { background:var(--sk-raised) !important; }
+html[data-ui] progress::-webkit-progress-bar { background:var(--sk-raised) !important; }
+html[data-ui] progress::-webkit-progress-value { background:var(--sk-accent) !important; }
+html[data-ui] tr.me { background:var(--sk-raised) !important; }
+html[data-ui] :is(td,th,table) { color:var(--sk-text) !important; border-color:var(--sk-line) !important; }
+html[data-ui] :is(.result-badge.win,.badge.fit,.plan-valid) { background:#123222 !important; color:var(--sk-good) !important; }
+html[data-ui] :is(.result-badge.loss,.badge.out,.plan-errors) { background:#3a1418 !important; color:var(--sk-bad) !important; }
+html[data-ui] .result-badge.draw { background:var(--sk-raised) !important; color:var(--sk-muted) !important; }
+html[data-ui] :is(select,option,input,textarea,.assignment-choice select,.exhibition-team select) { background:var(--sk-raised) !important; color:var(--sk-text) !important; border-color:var(--sk-line) !important; }
+html[data-ui] .modal { background:rgba(0,0,0,.7) !important; }
+html[data-ui] :is(p,li,small,label,dt,dd,span,strong,h2,h3,h4,time,summary,td,th) { text-shadow:none; }
+html[data-ui] :is(.muted,small,dt,label,.key-moments time) { color:var(--sk-muted) !important; }
+html[data-ui] :is(#flash,#save-status) { color:var(--sk-text) !important; }
+html[data-ui] .ground-scene { background-color:var(--sk-panel) !important; }
+
+/* ========== 2. STADIUM BROADCAST (night game) ========== */
 html[data-ui="2"] body, html[data-ui="2"] body:not([data-screen="match"]) {
-  background:linear-gradient(180deg,#0b1a3a 0 150px,#e9edf4 150px) !important; color:#0b1a3a !important;
+  background:linear-gradient(180deg,#0b1a3a 0 150px,#060d1f 150px) !important;
   font-family:Impact,"Arial Narrow","Liberation Sans Narrow","Helvetica Neue",Arial,sans-serif !important; }
-html[data-ui="2"] body[data-screen="match"] { background:#0b1a3a !important; }
+html[data-ui="2"] body[data-screen="match"] { background:#060d1f !important; }
 html[data-ui="2"] body:not([data-screen="match"])::before { display:none !important; }
-html[data-ui="2"] :is(p,small,li,label,dd,dt,select,td) { font-family:"Arial Narrow",Arial,"Liberation Sans",sans-serif !important; }
-html[data-ui="2"] header { border:0 !important; }
+html[data-ui="2"] :is(p,small,li,label,dd,dt,select,td,option) { font-family:"Arial Narrow",Arial,"Liberation Sans",sans-serif !important; }
+html[data-ui="2"] header { border:0 !important; border-bottom:3px solid #d81e2c !important; }
 html[data-ui="2"] h1 { display:inline-block; background:#d81e2c; color:#fff !important; padding:6px 26px 6px 16px !important;
   transform:skewX(-12deg); text-shadow:none !important; letter-spacing:3px !important; font-size:34px !important; font-style:italic; }
 html[data-ui="2"] .tag { color:#fff !important; text-transform:uppercase; letter-spacing:2px; font-weight:700; }
-html[data-ui="2"] .edition { color:#c9d3e8 !important; }
-html[data-ui="2"] :is(h2,h3) { text-transform:uppercase; color:#0b1a3a !important; letter-spacing:.5px; }
-html[data-ui="2"] :is(.eyebrow,.section-heading > span) { color:#d81e2c !important; font-weight:700; text-transform:uppercase; }
-html[data-ui="2"] .muted, html[data-ui="2"] .card p, html[data-ui="2"] .panel p { color:#2e3a55 !important; }
-html[data-ui="2"] .style { color:#b3141f !important; font-weight:700; text-transform:uppercase; }
+html[data-ui="2"] .edition { color:#c3cde3 !important; }
+html[data-ui="2"] :is(h2,h3) { text-transform:uppercase; color:#fff !important; letter-spacing:.5px; }
+html[data-ui="2"] :is(.eyebrow,.section-heading > span) { color:#ff6b77 !important; font-weight:700; text-transform:uppercase; }
+html[data-ui="2"] :is(main p,.intro p:not(.eyebrow),.card p,.panel p) { color:#d5dcec !important; }
+html[data-ui="2"] .style { color:#ff6b77 !important; font-weight:700; text-transform:uppercase; }
 html[data-ui="2"] #hud { background:#0b1a3a !important; border:0 !important; border-left:10px solid #d81e2c !important; border-radius:0 !important;
   transform:skewX(-8deg); box-shadow:6px 6px 0 #d81e2c !important; }
 html[data-ui="2"] #hud > * { transform:skewX(8deg); }
 html[data-ui="2"] #hud .stat { color:#fff !important; text-transform:uppercase; letter-spacing:1px; }
-html[data-ui="2"] :is(.panel,.card,.goal,.facility-mini,.assignment-row,.exhibition-team,.tactic-card) {
-  background:#fff !important; color:#0b1a3a !important; border:0 !important; border-top:6px solid #0b1a3a !important;
-  border-radius:0 !important; box-shadow:0 4px 0 #c7cedc !important; }
-html[data-ui="2"] button.card:hover { border-top-color:#d81e2c !important; }
+html[data-ui="2"] :is(.hero,.panel,.card,.goal,.facility-mini,.assignment-row,.exhibition-team,.tactic-card,.fixture-card,.week-budget,.week-complete,.modal-card) {
+  border:0 !important; border-top:5px solid #d81e2c !important; border-radius:0 !important; box-shadow:0 4px 0 #02060f !important; }
+html[data-ui="2"] button.card:hover, html[data-ui="2"] .tactic-card.selected { border-top-color:#fff !important; background:#17295a !important; }
 html[data-ui="2"] button { border-radius:0 !important; text-transform:uppercase; letter-spacing:1px; font-family:Impact,"Arial Narrow",Arial,sans-serif !important; }
 html[data-ui="2"] :is(button.ember,.tab.on,.match-controls button.ember) { background:#d81e2c !important; color:#fff !important; border:0 !important;
-  box-shadow:4px 4px 0 #0b1a3a !important; padding:10px 18px !important; }
-html[data-ui="2"] :is(button.ghost,.tab,#hud button) { background:#fff !important; color:#0b1a3a !important; border:2px solid #0b1a3a !important; box-shadow:none !important; }
-html[data-ui="2"] header button.ghost { border-color:#fff !important; }
-html[data-ui="2"] .match-controls button { background:#14275a !important; color:#fff !important; border:0 !important; }
-html[data-ui="2"] button.danger { background:#0b1a3a !important; color:#fff !important; border:0 !important; }
-html[data-ui="2"] .badge { background:#0b1a3a !important; color:#fff !important; border-radius:0 !important; }
+  box-shadow:4px 4px 0 #000 !important; }
+html[data-ui="2"] :is(button.ghost,.tab,#hud button,.match-controls button) { background:#0f1d3d !important; color:#fff !important; border:2px solid #c3cde3 !important; box-shadow:none !important; }
+html[data-ui="2"] button.danger { background:#3a0d14 !important; color:#ffb3b9 !important; border:2px solid #d81e2c !important; }
+html[data-ui="2"] :is(.badge,.team-status) { background:#d81e2c !important; color:#fff !important; border-radius:0 !important; text-transform:uppercase; }
+html[data-ui="2"] .team-status { transform:skewX(-10deg); }
+html[data-ui="2"] .team-status.wip { background:#c3cde3 !important; color:#0b1a3a !important; }
 html[data-ui="2"] footer.danger { border-top:4px solid #d81e2c !important; }
 html[data-ui="2"] .built-by { display:inline-block; background:#fff; color:#0b1a3a !important; padding:2px 10px !important; margin-top:8px !important;
   font-weight:700; letter-spacing:2px !important; border-left:6px solid #d81e2c; }
-html[data-ui="2"] .built-by::before { content:"● LIVE · "; color:#d81e2c; }
-html[data-ui="2"] .built-by b { color:#d81e2c !important; }
-html[data-ui="2"] footer .credit { color:#0b1a3a !important; font-weight:700; text-transform:uppercase; }
+html[data-ui="2"] .built-by::before { content:"● LIVE · "; color:#c2121f; }
+html[data-ui="2"] .built-by b { color:#c2121f !important; }
+html[data-ui="2"] footer .credit { color:#fff !important; font-weight:700; text-transform:uppercase; }
 html[data-ui="2"] :is(.credit-badge,.credit-corner) { background:#d81e2c !important; color:#fff !important; border:0 !important; border-radius:0 !important; text-transform:uppercase; }
 html[data-ui="2"] .credit-mark { background:#fff !important; color:#d81e2c !important; border-radius:0 !important; }
-html[data-ui="2"] body[data-screen="match"] .match-stage { border-top:8px solid #d81e2c; background:#0b1a3a !important; }
+html[data-ui="2"] .week-steps { background:#0f1d3d !important; border:0 !important; border-radius:0 !important; border-bottom:4px solid #d81e2c !important; }
+html[data-ui="2"] .week-steps li { background:transparent !important; color:#c3cde3 !important; text-transform:uppercase; border-color:#2b3f72 !important; }
+html[data-ui="2"] .week-steps li.step-active { background:#d81e2c !important; color:#fff !important; }
+html[data-ui="2"] #flash { font-weight:700; }
+html[data-ui="2"] body[data-screen="match"] .match-stage { border-top:8px solid #d81e2c; background:#060d1f !important; }
 
-/* ========== 3. PARCHMENT FANTASY ========== */
-html[data-ui="3"] { color-scheme:light; --ink:#3a2412; --cream:#3a2412; --dim:#5e4127; --gold:#a8781c; }
+/* ========== 3. PARCHMENT FANTASY (dark tome) ========== */
 html[data-ui="3"] body, html[data-ui="3"] body:not([data-screen="match"]) {
-  background:radial-gradient(ellipse at 50% 30%,#f6e7c4 0,#ead3a0 60%,#c9a46a 100%) fixed !important; color:#3a2412 !important;
+  background:radial-gradient(ellipse at 50% 20%,#3a2717 0,#24170d 55%,#120b06 100%) fixed !important;
   font-family:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,"DejaVu Serif",serif !important; }
-html[data-ui="3"] body[data-screen="match"] { background:#3a2412 !important; }
+html[data-ui="3"] body[data-screen="match"] { background:#120b06 !important; }
 html[data-ui="3"] body:not([data-screen="match"])::before { display:none !important; }
-html[data-ui="3"] :is(button,select) { font-family:inherit !important; }
-html[data-ui="3"] header { border-bottom:3px double #a8781c !important; }
-html[data-ui="3"] h1 { color:#6b1d12 !important; font-variant:small-caps; font-size:40px !important; letter-spacing:4px !important;
-  text-shadow:1px 1px 0 #f9e9b8,2px 2px 0 rgba(120,80,20,.35) !important; font-weight:700; }
-html[data-ui="3"] h1::before, html[data-ui="3"] h1::after { content:"❦"; color:#a8781c; font-size:.6em; margin:0 10px; vertical-align:middle; }
-html[data-ui="3"] :is(h2,h3) { color:#6b1d12 !important; font-variant:small-caps; }
-html[data-ui="3"] :is(.tag,.edition,.eyebrow,.muted,p,small,dt,label,li,.section-heading > span) { color:#4f3519 !important; }
+html[data-ui="3"] :is(button,select,option) { font-family:inherit !important; }
+html[data-ui="3"] header { border-bottom:3px double #c9a14a !important; }
+html[data-ui="3"] h1 { color:#e8b36b !important; font-variant:small-caps; font-size:40px !important; letter-spacing:4px !important;
+  text-shadow:0 0 1px #7a1a10,2px 2px 0 #6b1d12,3px 3px 0 #000 !important; font-weight:700; }
+html[data-ui="3"] h1::before, html[data-ui="3"] h1::after { content:"❦"; color:#c9a14a; font-size:.6em; margin:0 10px; vertical-align:middle; }
+html[data-ui="3"] :is(h2,h3) { color:#e8b36b !important; font-variant:small-caps; }
+html[data-ui="3"] :is(.tag,.edition,.eyebrow,.section-heading > span) { color:#d8c39b !important; }
+html[data-ui="3"] :is(main p,.intro p:not(.eyebrow),li) { color:#ecdcb8 !important; }
 html[data-ui="3"] .tag { font-style:italic; }
-html[data-ui="3"] .style { color:#7a4a0c !important; font-style:italic; }
-html[data-ui="3"] #hud { background:linear-gradient(#5a3a1c,#3e2610) !important; border:2px solid #c9a14a !important; border-radius:6px !important;
-  box-shadow:inset 0 0 0 3px #3e2610, inset 0 0 0 4px #c9a14a !important; }
-html[data-ui="3"] #hud .stat { color:#f6e7c4 !important; }
-html[data-ui="3"] :is(.panel,.card,.goal,.facility-mini,.assignment-row,.exhibition-team,.tactic-card) {
-  background:linear-gradient(135deg,#fbf0d4,#f1dcab) !important; color:#3a2412 !important; border:2px solid #b8862b !important;
-  border-radius:4px !important; box-shadow:inset 0 0 0 4px #fbf0d4, inset 0 0 0 5px #c9a14a, 0 4px 10px rgba(80,50,10,.35) !important; }
+html[data-ui="3"] .style { color:#e0b04c !important; font-style:italic; }
+html[data-ui="3"] #hud { background:linear-gradient(#4a2f17,#2e1c0d) !important; border:2px solid #c9a14a !important; border-radius:6px !important;
+  box-shadow:inset 0 0 0 3px #2e1c0d, inset 0 0 0 4px #c9a14a !important; }
+html[data-ui="3"] #hud .stat { color:#f3e3c0 !important; }
+html[data-ui="3"] :is(.hero,.panel,.card,.goal,.facility-mini,.assignment-row,.exhibition-team,.tactic-card,.fixture-card,.week-budget,.week-complete,.modal-card) {
+  background:linear-gradient(135deg,#2e1f13,#22160c) !important; border:2px solid #b8862b !important; border-radius:4px !important;
+  box-shadow:inset 0 0 0 4px #22160c, inset 0 0 0 5px #7a5a26, 0 4px 10px rgba(0,0,0,.5) !important; }
+html[data-ui="3"] button.card:hover, html[data-ui="3"] .tactic-card.selected { border-color:#e0b04c !important; }
 html[data-ui="3"] :is(button.ember,.tab.on,.match-controls button.ember) { background:radial-gradient(circle at 35% 30%,#b33a2a,#7a1a10) !important;
-  color:#fff3d6 !important; border:2px solid #4e0f08 !important; border-radius:22px !important; box-shadow:0 3px 0 #4e0f08, inset 0 1px 0 rgba(255,220,180,.4) !important; font-weight:700; }
-html[data-ui="3"] :is(button.ghost,.tab,#hud button,.match-controls button) { background:repeating-linear-gradient(90deg,#8a5a2b 0 6px,#7c4f24 6px 11px) !important;
-  color:#fff3d6 !important; border:2px solid #4a2c10 !important; border-radius:4px !important; box-shadow:0 3px 0 #4a2c10 !important; }
-html[data-ui="3"] button.danger { background:#4a2c10 !important; color:#ffd9b8 !important; border:2px solid #2a1806 !important; }
-html[data-ui="3"] .badge { background:#a8781c !important; color:#fffbe8 !important; }
-html[data-ui="3"] footer.danger { border-top:3px double #a8781c !important; }
-html[data-ui="3"] .built-by { color:#5e4127 !important; font-style:italic; text-transform:none !important; letter-spacing:.04em !important; font-size:14px !important; }
-html[data-ui="3"] .built-by::before { content:"✒ Penned & "; }
-html[data-ui="3"] .built-by b { color:#6b1d12 !important; font-variant:small-caps; }
-html[data-ui="3"] footer .credit { color:#5e4127 !important; font-style:italic; }
-html[data-ui="3"] :is(.credit-badge,.credit-corner) { background:#fbf0d4 !important; color:#6b1d12 !important; border:1px solid #a8781c !important; }
-html[data-ui="3"] .credit-mark { background:#7a1a10 !important; color:#fff3d6 !important; }
-html[data-ui="3"] body[data-screen="match"] .match-stage { border:6px solid #a8781c; outline:2px solid #4a2c10; background:#3a2412 !important; }
-
-/* Shared fixes: intro copy and team status chips per skin */
-html[data-ui="1"] .intro p:not(.eyebrow) { color:#d8d3f5 !important; }
-html[data-ui="2"] .intro p:not(.eyebrow), html[data-ui="2"] main p { color:#2e3a55 !important; }
-html[data-ui="2"] main .eyebrow { color:#b3141f !important; }
-html[data-ui="3"] .intro p:not(.eyebrow) { color:#4f3519 !important; }
-html[data-ui="1"] .team-status { background:transparent !important; color:#7df9ff !important; border:1px solid #00e5ff; border-radius:0 !important; }
-html[data-ui="1"] .team-status.wip { color:#ffe14d !important; border-color:#ffe14d; }
-html[data-ui="2"] .team-status { background:#0b1a3a !important; color:#fff !important; border-radius:0 !important; text-transform:uppercase; transform:skewX(-10deg); }
-html[data-ui="2"] .team-status.wip { background:#d81e2c !important; }
+  color:#fff3d6 !important; border:2px solid #4e0f08 !important; border-radius:22px !important; box-shadow:0 3px 0 #000, inset 0 1px 0 rgba(255,220,180,.4) !important; font-weight:700; }
+html[data-ui="3"] :is(button.ghost,.tab,#hud button,.match-controls button) { background:repeating-linear-gradient(90deg,#5a3a1c 0 6px,#4f3218 6px 11px) !important;
+  color:#f3e3c0 !important; border:2px solid #2a1806 !important; border-radius:4px !important; box-shadow:0 3px 0 #000 !important; }
+html[data-ui="3"] button.danger { background:#3a120c !important; color:#f6c7b0 !important; border:2px solid #7a1a10 !important; }
+html[data-ui="3"] .badge { background:#6b4a14 !important; color:#fff3d6 !important; }
 html[data-ui="3"] .team-status { background:#6b1d12 !important; color:#fff3d6 !important; border-radius:2px !important; font-variant:small-caps; }
-html[data-ui="3"] .team-status.wip { background:#7a5a1c !important; }
-html[data-ui="1"] .week-steps { background:#0d0a1c !important; border:2px solid #00e5ff !important; border-radius:0 !important; }
-html[data-ui="1"] .week-steps li { background:transparent !important; color:#c9c3f0 !important; border-color:#2b2550 !important; }
-html[data-ui="1"] .week-steps li.step-active, html[data-ui="1"] .week-steps li.step-done { background:#2a0c2a !important; color:#ff8af0 !important; }
-html[data-ui="2"] .week-steps { background:#fff !important; border:0 !important; border-radius:0 !important; border-bottom:4px solid #0b1a3a !important; }
-html[data-ui="2"] .week-steps li { background:#fff !important; color:#2e3a55 !important; text-transform:uppercase; }
-html[data-ui="2"] .week-steps li.step-active, html[data-ui="2"] .week-steps li.step-done { background:#0b1a3a !important; color:#fff !important; }
-html[data-ui="3"] .week-steps { background:#f6e3b5 !important; border:2px solid #b8862b !important; }
-html[data-ui="3"] .week-steps li { background:transparent !important; color:#4f3519 !important; border-color:#c9a14a !important; }
-html[data-ui="3"] .week-steps li.step-active, html[data-ui="3"] .week-steps li.step-done { background:#6b1d12 !important; color:#fff3d6 !important; }
-html[data-ui] .week-steps li > span { color:inherit !important; background:rgba(128,128,128,.25) !important; }
-html[data-ui="1"] #flash { color:#7df9ff !important; }
-html[data-ui="2"] #flash { color:#0b1a3a !important; font-weight:700; }
-html[data-ui="3"] #flash { color:#3a2412 !important; font-style:italic; }
+html[data-ui="3"] .team-status.wip { background:#6b4a14 !important; }
+html[data-ui="3"] footer.danger { border-top:3px double #c9a14a !important; }
+html[data-ui="3"] .built-by { color:#d8c39b !important; font-style:italic; text-transform:none !important; letter-spacing:.04em !important; font-size:14px !important; }
+html[data-ui="3"] .built-by::before { content:"✒ Penned & "; }
+html[data-ui="3"] .built-by b { color:#e8b36b !important; font-variant:small-caps; }
+html[data-ui="3"] footer .credit { color:#d8c39b !important; font-style:italic; }
+html[data-ui="3"] :is(.credit-badge,.credit-corner) { background:#2a1c11 !important; color:#f3e3c0 !important; border:1px solid #c9a14a !important; }
+html[data-ui="3"] .credit-mark { background:#7a1a10 !important; color:#fff3d6 !important; }
+html[data-ui="3"] .week-steps { background:#2a1c11 !important; border:2px solid #b8862b !important; }
+html[data-ui="3"] .week-steps li { background:transparent !important; color:#d8c39b !important; border-color:#7a5a26 !important; }
+html[data-ui="3"] .week-steps li.step-active { background:#6b1d12 !important; color:#fff3d6 !important; }
+html[data-ui="3"] #flash { font-style:italic; }
+html[data-ui="3"] body[data-screen="match"] .match-stage { border:6px solid #a8781c; outline:2px solid #000; background:#120b06 !important; }
+
+/* Skin 1 extras */
+html[data-ui="1"] .week-steps li.step-active { background:#2a0c2a !important; color:#ff8af0 !important; }
+/* Plain buttons (e.g. recruit "Sign for …") */
+html[data-ui] main button:not(.ghost):not(.ember):not(.danger):not(.card):not(.tab):not(.tactic-card):not(.ground-building) { background:var(--sk-raised) !important; color:var(--sk-text) !important; border:2px solid var(--sk-accent) !important; box-shadow:none !important; }
