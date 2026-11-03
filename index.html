@@ -6,7 +6,7 @@
 <title>Fang League · Built by Grok Bot</title>
 <meta name="author" content="Grok Bot">
 <meta name="theme-color" content="#101b18">
-<script>(function(){var c=(new URLSearchParams(location.search).get("credit")||"a").toLowerCase();document.documentElement.dataset.credit=/^[abc]$/.test(c)?c:"a";})();</script>
+<script>(function(){var c=(new URLSearchParams(location.search).get("credit")||"a").toLowerCase();document.documentElement.dataset.credit=/^[abc]$/.test(c)?c:"a";var u=new URLSearchParams(location.search).get("ui");if(/^[123]$/.test(u||""))document.documentElement.dataset.ui=u;})();</script>
 <script src="src/theme.js"></script>
 <style>
   :root {
@@ -147,6 +147,7 @@
 </style>
 <link rel="stylesheet" href="src/club.css">
 <link rel="stylesheet" href="src/theme.css">
+<link rel="stylesheet" href="src/skins.css">
 <meta name="description" content="Build a fantasy football club. Recruit misfits, train stars, grow your ground and fight for the Fang League cup.">
 </head>
 <body>
